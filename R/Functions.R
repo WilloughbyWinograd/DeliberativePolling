@@ -1746,7 +1746,7 @@ Multiple.Regression=function(Dataset, Template, Model, Group1, Group2, Outputs, 
   }
 }
 
-#' Strips a dataset of all  for crosstab creation.
+#' Strips the dataset of all columns not present in the codebook.
 #' @export
 Dataset.Organize = function(Codebook, Datasets){
 
