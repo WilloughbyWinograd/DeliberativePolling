@@ -1774,7 +1774,7 @@ Dataset.Organize = function(Codebook, Datasets){
     Unique_Entries = unique(unlist(Unique_Entries))
 
     if(length(Unique_Entries)>0){
-      if(!is.na(Unique_Entries)){
+      {
 
       Unique_Entries = Unique_Entries[complete.cases(Unique_Entries)]
 
