@@ -6,6 +6,59 @@
   #if(missing(Export)){Export = TRUE}
   #if(missing(Outputs)){Outputs = ""}
   
+    {
+      
+      Group1 = GroupDetails1[1]
+      Time1 = GroupDetails1[2]
+      Weight1 = GroupDetails1[3]
+      
+      Group2 = GroupDetails2[1]
+      Time2 = GroupDetails2[2]
+      Weight2 = GroupDetails2[3]
+      
+      File = paste0(".", File)
+      
+      # Imports codebook.
+      if(any(class(try((suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == "Codebook")), col_names = TRUE))),silent = TRUE)) == "try-error")){
+        stop("No codebook found. Ensure there is a sheet named 'Codebook' in dataset file.")
+      }
+      Codebook = suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == "Codebook")), col_names = TRUE))
+      
+      # Gets the name of the datasets.
+      Name_Group1 = paste(Group1, "at", Time1)
+      Name_Group2 = paste(Group2, "at", Time2)
+      
+      # Checks if selected dataset exists.
+      if(any(class(try((suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == Name_Group1)), col_names = TRUE))),silent = TRUE)) == "try-error")){
+        stop(paste("No dataset with the name", Name_Group1, "found.", sep = " "))
+      }
+      if(any(class(try((suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == Name_Group2)), col_names = TRUE))),silent = TRUE)) == "try-error")){
+        stop(paste("No dataset with the name", Name_Group2, "found.", sep = " "))
+      }
+      
+      # Gets datasets.
+      Dataset_Group1 = suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == Name_Group1)), col_names = TRUE))
+      Dataset_Group2 = suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == Name_Group2)), col_names = TRUE))
+      
+      # Gets the name depending on the inputs.
+      Name_Group = "Null"
+      if(Group1 == Group2){
+        Name_Group = paste(Group1, "at", Time1, "v.", Time2)
+      }
+      if(Time1 == Time2){
+        Name_Group = paste(Group1, "v.", Group2, "at", Time1)
+      }
+      if((Group1 == Group2)&(Time1 == Time2)){
+        Name_Group = paste(Group1, "at", Time1)
+      }
+      if((Group1!= Group2)&(Time1!= Time2)){
+        Name_Group = paste(Group1, "at", Time1, "v.", Group2, "at", Time1)
+      }
+      
+      # Returns a list of the dataframes and names.
+      return(list(Codebook, Dataset_Group1, Dataset_Group2, Name_Group1, Name_Group2, Name_Group, Group1, Group2, Time1, Time2, Weight1, Weight2))
+    }
+  
   # Gets the codebook, datasets, and names in a list.
   List_Datasets_Names = Dataset_Import(Dataset, Group1, Group2)
   
@@ -43,13 +96,11 @@
   colnames(Overall) = "Overall"
   Dataset_Group2 = cbind(Dataset_Group2, Overall)
   
-  # Gets the column number of the first and last ordinal and nominals.
-  Ordinals = (which(Codebook[1,] == "Ordinal"))
-  Nominals = (which(Codebook[1,] == "Nominal"))
-  Ordinal_Beg = Ordinals[1]
-  Ordinal_End = Ordinals[length(Ordinals)]
-  Nominal_Beg = Nominals[1]
-  Nominal_End = Nominals[length(Nominals)]
+  Ordinals = which(Codebook[1,] == "Ordinal")
+  
+  for(Column in Columns){
+    
+  }
   
   # Values to stop crosstab creation once all nominals and ordinals have been analyzed
   OrdinalsCounter = Ordinal_Beg-1
