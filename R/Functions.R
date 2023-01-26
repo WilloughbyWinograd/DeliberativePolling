@@ -1786,6 +1786,7 @@ Crosstab.Demographics = function(Dataset, Template, Group1, Group2, Outputs, Exp
 
   # Replaces the column numbers of the demographic categories with the names of the categories
   Crosstabs = data.frame(lapply(Crosstabs, function(x) {gsub("9999", "", x)}))
+  Crosstabs = data.frame(lapply(Crosstabs, function(x) {gsub("NaN%", "0%", x)}))
 
   # Creates the name of the file.
   {
@@ -2167,6 +2168,7 @@ Crosstab.Opinions.Detailed = function(Dataset, Template, Group1, Group2, Demogra
       Crosstabs = data.frame(lapply(Crosstabs, function(x) {gsub("NaN", "", x)}))
       Crosstabs = data.frame(lapply(Crosstabs, function(x) {gsub("9999", "", x)}))
       Crosstabs = data.frame(lapply(Crosstabs, function(x) {gsub("Spacer", "", x)}))
+      Crosstabs = data.frame(lapply(Crosstabs, function(x) {gsub("(NaN%)", "", x)}))
     }
 
     # Runs a pre-defined function that creates Excel spreadsheets from the crosstabs.
@@ -2610,7 +2612,7 @@ Dataset.Organize = function(Codebook, Datasets){
             
             Dataset_Column = stack(as_tibble(lapply(unlist(Dataset_Column), function(x)
               if(isTRUE(nchar(x[1])==nchar(Category_Text))){
-                gsub(gsub("[()]", "", Category_Text), Category_Number, x)
+                gsub(gsub("[^[:alnum:]]","",Category_Text), Category_Number, gsub("[^[:alnum:]]","",x))
               }
               else {x})))[1]
             

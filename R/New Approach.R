@@ -1,6 +1,11 @@
-#' Creates a crosstab in Excel and Word.
+#' Creates a formatted data set in Excel.
 #' @export
-#Crosstab = function(Dataset, Template, Output, Export)
+#Dataset = function(Dataset, Output)
+{}
+
+#' Creates a cross-tabulation table in Excel and Word.
+#' @export
+#Table = function(Dataset, Template, Output, Export)
   {
   
   #if(missing(Export)){Export = TRUE}
