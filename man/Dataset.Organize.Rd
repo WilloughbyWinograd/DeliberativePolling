@@ -2,10 +2,10 @@
 % Please edit documentation in R/Functions.R
 \name{Dataset.Organize}
 \alias{Dataset.Organize}
-\title{Strips a dataset of all  for crosstab creation.}
+\title{Strips the dataset of all columns not present in the codebook.}
 \usage{
 Dataset.Organize(Codebook, Datasets)
 }
 \description{
-Strips a dataset of all  for crosstab creation.
+Strips the dataset of all columns not present in the codebook.
 }
