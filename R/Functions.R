@@ -2650,7 +2650,8 @@ Dataset.Organize = function(Codebook, Datasets){
         
       }
       
-      Dataset_Column = suppressWarnings(as.numeric(as.matrix(Dataset_Column))) # Forces numeric
+      Dataset_Column = suppressWarnings((as.matrix(Dataset_Column)))
+      if(Type != "Text"){Dataset_Column = suppressWarnings(as.numeric(as.matrix(Dataset_Column)))} # Forces numeric
       Dataset_Column = as_tibble(Dataset_Column)
       colnames(Dataset_Column) = Name
       Dataset_New = cbind(Dataset_New, Dataset_Column)
