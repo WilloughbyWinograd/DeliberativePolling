@@ -1,5 +1,6 @@
 #' Creates a crosstab in Excel and Word.
 #' @export
+#' #Make final dataset SPSS. Make code run off SPSS
 Crosstab = function(Dataset, Template, Output, Export){
   
   if(missing(Export)){Export = TRUE}
@@ -2543,6 +2544,15 @@ Dataset.Organize = function(Codebook, Datasets){
   library(stringr)
   library(dplyr)
   
+  for(Dataset_Number in 1:length(Datasets)){
+    Dataset = Datasets[[Dataset_Number]]
+    OG_Names = names(Dataset)
+    names(Dataset) = paste(seq(1,length(OG_Names)), OG_Names)
+    Dataset = Dataset %>% mutate_all(funs(str_replace_all(., paste0("[", paste(c("&", "$", "£", "+"), collapse = ""), "]"), "_")))
+    names(Dataset) = OG_Names
+    Datasets[[Dataset_Number]] = Dataset
+  }
+  
   Codebook_Demographics = Codebook[which(Codebook[1,] == "Demographic")]
   
   for(Name in names(Codebook_Demographics)){
@@ -2612,7 +2622,7 @@ Dataset.Organize = function(Codebook, Datasets){
             
             Dataset_Column = stack(as_tibble(lapply(unlist(Dataset_Column), function(x)
               if(isTRUE(nchar(x[1])==nchar(Category_Text))){
-                gsub(gsub("[^[:alnum:]]","",Category_Text), Category_Number, gsub("[^[:alnum:]]","",x))
+                gsub(Category_Text, Category_Number, x)
               }
               else {x})))[1]
             
@@ -2685,8 +2695,8 @@ Dataset_Import = function(File, GroupDetails1, GroupDetails2){
   }
 
   # Gets datasets.
-  Dataset_Group1 = suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == Name_Group1)), col_names = TRUE))
-  Dataset_Group2 = suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == Name_Group2)), col_names = TRUE))
+  Dataset_Group1 = suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == Name_Group1)), col_names = TRUE, col_types = "numeric"))
+  Dataset_Group2 = suppressMessages(read_excel(File, (which(readxl::excel_sheets(File) == Name_Group2)), col_names = TRUE, col_types = "numeric"))
 
   # Gets the name depending on the inputs.
   Name_Group = "Null"
@@ -2700,7 +2710,7 @@ Dataset_Import = function(File, GroupDetails1, GroupDetails2){
     Name_Group = paste(Group1, "at", Time1)
   }
   if((Group1!= Group2)&(Time1!= Time2)){
-    Name_Group = paste(Group1, "at", Time1, "v.", Group2, "at", Time1)
+    Name_Group = paste(Group1, "at", Time1, "v.", Group2, "at", Time2)
   }
 
   # Returns a list of the dataframes and names.
