@@ -1,10 +1,17 @@
 #' Creates crosstabs and a report on results.
 #' @export
-Results = function(Dataset, Template, Group1, Group2, Demographics, Outputs, Export, Alpha, Only_Means, Only_Significant){
+Results = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Means, Only_Significant){
+
+  if(missing(Outputs)){Outputs = ""}
+  if(missing(Alpha)){Alpha = 0.05}
+  if(missing(Only_Significant)){Only_Significant = FALSE}
+  if(missing(Only_Means)){Only_Means = FALSE}
+  if(missing(Report_Demographic)){Report_Demographic = "Overall"}
+  Export = TRUE
   
-  Crosstab.Ordinal(Dataset, Template, Group1, Group2, Outputs, Export, Alpha, Only_Significant)
+  Crosstab.Ordinal(Dataset, Templates, Outputs, Group1, Group2, Alpha, Only_Significant)
   
-  Crosstab.Nominal(Dataset, Template, Group1, Group2, Outputs, Export, Alpha, Only_Significant, Only_Means)
+  Crosstab.Nominal(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means)
 }
 
 #' Formats a dataset for use in Results function.
@@ -135,13 +142,9 @@ Dataset = function(Codebook, Datasets){
 }
 
 #' Creates a crosstab in Excel and Word comparing opinions.
-Crosstab.Nominal = function(Dataset, Template, Group1, Group2, Outputs, Export, Alpha, Only_Significant, Only_Means){
+Crosstab.Nominal = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means){
   
-  if(missing(Export)){Export = TRUE}
-  if(missing(Outputs)){Outputs = ""}
-  if(missing(Alpha)){Alpha = 0.05}
-  if(missing(Only_Significant)){Only_Significant = FALSE}
-  if(missing(Only_Means)){Only_Means = FALSE}
+  Template = Templates[1]
   
   # Adds objects to global environment
   assign("Alpha", Alpha, envir = globalenv())
@@ -926,16 +929,19 @@ Crosstab.Nominal = function(Dataset, Template, Group1, Group2, Outputs, Export, 
     {
       Export_Excel(Outputs, Crosstabs, File_Name, Name_Group)
     }
+    
+    # Runs a pre-defined function that creates a report from the crosstabs.
+    {
+      if((Demographic_Category == Report_Demographic)&(Group1 == Group2)){Export_Report(Outputs, Crosstabs, File_Name, Name_Group, Demographic_Category)}
+    }
+    
   }
 }
 
 #' Creates a crosstab in Excel and Word comparing demographics
-Crosstab.Ordinal = function(Dataset, Template, Group1, Group2, Outputs, Export, Alpha, Only_Significant){
+Crosstab.Ordinal = function(Dataset, Templates, Outputs, Group1, Group2, Alpha, Only_Significant){
   
-  if(missing(Export)){Export = TRUE}
-  if(missing(Outputs)){Outputs = ""}
-  if(missing(Alpha)){Alpha = 0.05}
-  if(missing(Only_Significant)){Only_Significant = FALSE}
+  Template = Templates[1]
   
   # Adds objects to global environment
   assign("Alpha", Alpha, envir = globalenv())
@@ -1372,7 +1378,7 @@ Test_Chi_Squared = function(ValuetoMark, Group1, Group2){
   return(ValuetoMark)
 }
 
-#' Exports crosstab in Excel.
+#' Exports a crosstab in Excel.
 Export_Excel = function(Outputs, Crosstabs, File_Name, Sheet_Name){
   
   # Gets the file name.
@@ -1390,7 +1396,7 @@ Export_Excel = function(Outputs, Crosstabs, File_Name, Sheet_Name){
   print(noquote(paste("Exported:", File_Name)))
 }
 
-#' Exports crosstab in Word.
+#' Exports a crosstab in Word.
 Export_Word = function(Export, Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type, Demographic_Category){
   
   if(Export){
@@ -1814,3 +1820,200 @@ Export_Word = function(Export, Outputs, Template, Crosstabs, Codebook, File_Name
         print(WordDocument, target = paste0(getwd(), Outputs, "/", File_Name))
         print(noquote(paste("Exported:", File_Name)))
       }}}}
+
+#' Exports a report on crosstab in Word.
+Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_Category){
+  
+  ReturnText = function(Change){
+    if(Change<0){
+      return("decreased")
+    }
+    if(Change>0){
+      return("increased")
+    }
+    if(Change==0){
+      return("stayed the same")
+    }
+  }
+  
+  Stance = function(support_percent, opposition_percent){
+    if (support_percent >= 0.67) {
+      return("super majority support")
+    } else if (support_percent > 0.5) {
+      return("majority support")
+    } else if (opposition_percent > 0.5) {
+      return("majority opposition")
+    } else if (opposition_percent >= 0.33) {
+      return("no majority support")
+    } else {
+      return("no majority opposition")
+    }
+  }
+  
+  Convert_Percentage = function(Percentage){
+    return(as.numeric(sub("%", "", Percentage))/100)
+  }
+  
+  FormatPercentage = function(Percent){
+    return(paste0(abs(Percent*100),"%"))
+  }
+  
+  Legend = Crosstabs[2:(which(Crosstabs[2] == "Prompt and Responses")-6), 2]
+  Tabs = Crosstabs[(2+which(Crosstabs[2] == "Prompt and Responses")):nrow(Crosstabs), ]
+  
+  Questions = unique(Tabs$ID)
+  Questions = Questions[nzchar(Questions)]
+  
+  Subject = Group1
+  
+  Lines_All = paste0("")
+  
+  WordDocument <- suppressWarnings(read_docx(paste0(getwd(), Templates[2])))
+  
+  for(Question in Questions){
+    
+    Tab = Tabs[which(Tabs$ID == Question):(which(Tabs$ID == Question)+4),]
+    
+    Text = (Crosstabs[which(Crosstabs == Question), 2])
+    
+    Lines = paste0(Subject, " were asked to give their agreement that, \"", gsub("\\.", "", Text), "\"")
+    
+    # Create the matrix with the specified headings
+    Data <- matrix(ncol=3, nrow=0, dimnames=list(NULL, c("Group", "Agreement Before Deliberation", "Agreement After Deliberation")))
+    
+    for(Group in Legend){
+      
+      Index = which(Legend == Group)
+      
+      Group_Original = Group
+      
+      if(Group == "Total"){
+        Group = Subject
+        Note = " "
+      } else {
+        Group = paste("those who self-identified as", Group)
+        Note = " among this group "
+      }
+      
+      Group_Results = Tab[seq(Index + 2, length.out = 3, by = 1+length(Legend))]
+      
+      Beg_Mean = Group_Results[1,1]
+      End_Mean = Group_Results[1,2]
+      Change_Mean = Group_Results[1,3]
+      
+      Beg_Support = Convert_Percentage(Group_Results[2,1])
+      End_Support = Convert_Percentage(Group_Results[2,2])
+      Change_Support = Convert_Percentage(Group_Results[2,3])
+      
+      Beg_Opposition = Convert_Percentage(Group_Results[4,1])
+      End_Opposition = Convert_Percentage(Group_Results[4,2])
+      Change_Opposition = Convert_Percentage(Group_Results[4,3])
+      
+      Data = rbind(Data, c(Group_Original, Beg_Support, End_Support))
+      
+      if(abs(Change_Support) > abs(Change_Opposition)){ Line1 = paste("Among", paste0(Group,","),  "support", ReturnText(Change_Support), "by", FormatPercentage(Change_Support))}
+      if(abs(Change_Support) < abs(Change_Opposition)){ Line1 = paste("Among", paste0(Group,","),  "opposition", ReturnText(Change_Opposition), "by", FormatPercentage(Change_Opposition))}
+      if(abs(Change_Support) == abs(Change_Opposition)){ Line1 = paste("Among", paste0(Group,","),  "support", ReturnText(Change_Opposition))}
+      
+      if(Stance(End_Support, End_Opposition) == Stance(Beg_Support, Beg_Opposition)){
+        Line2 = paste0("After deliberation there was ", Stance(End_Support, End_Opposition), Note, "just as before deliberation.")
+      } else {
+        Line2 = paste0("Before deliberation there was ", Stance(Beg_Support, Beg_Opposition), " while after deliberation there was ", Stance(End_Support, End_Opposition), ".")
+      }
+      
+      Lines = paste(Lines, paste0(Line1, ". ", Line2))
+    }
+    
+    Data = as.data.frame(Data)
+    Names = Data[,1]
+    Data=Data[,-1]
+    Data = apply(Data, 2, as.numeric)
+    Data = as.data.frame(Data)
+    rownames(Data) = Names
+    Data = t(Data)
+    
+    quartzFonts(myFont = c("Arial", "plain", "normal", "normal"))
+    par(family="Arial", cex=.6)
+    Data[Data == 0] = .01
+    percent <- Data[rev(row.names(Data)), ] * 100
+    
+    # Define colors vector
+    colors <- c("#173d6e", "#ac1e2e")
+    
+    par(mar=c(5, 7, 0, 0) + 0.1)
+    
+    # Make the horizontal bar plot with no border
+    #barplot(as.matrix(percent), col=colors, beside=TRUE, horiz=TRUE, border=NA, xlim=c(0, 100), las=1)
+    
+    # Put the legend below the plot
+    legend("bottom", fill=colors, legend=rev(rownames(Data)), ncol=2)
+    
+    # Add label for X axis
+    title(xlab="Agreement (%)")
+    
+    Data <- as.data.frame(t(Data))
+    
+    Data1 = Data[1]
+    Data2 = Data[2]
+    
+    names(Data1)[1] = "Agreement (%)"
+    names(Data2)[1] = "Agreement (%)"
+    
+    rownames(Data1) = paste(rownames(Data1), "(Before)")
+    rownames(Data2) = paste(rownames(Data2), "(After)")
+    
+    # Interlace the data frames
+    Combined <- rbind(Data1, Data2)
+    
+    Combined = cbind(rownames(Combined), Combined)
+    
+    # Interlace rows based on row index
+    Combined = Combined[rev(order(Combined$`rownames(Combined)`)), ]
+    
+    Data = Combined
+    Data = Data[2]
+    
+    Group = row.names(Data)
+    Data = as.data.frame(cbind(Group, Data))
+    
+    table <- flextable(Data)
+    
+    table = width(table, width = 2)
+    table = width(table, j = 2, width = 4.5)
+    
+    table <- align(table, align = "right", part = "body", j = 1)
+    table <- align(table, align = "left", part = "body", j = 2)
+    table <- align(table, align = "right", part = "header")
+    
+    # Add minibars to the table
+    table <- compose(table, j = "Agreement (%)", value = as_paragraph(minibar(as.vector(Data$Agreement), barcol = colors[1], width = 4.5)))
+    
+    Plot = table
+    
+    if(Questions[1] == Question){
+      
+      WordDocument <- WordDocument %>%
+        body_replace_all_text("Text", "") %>%
+        body_add_par(Question, style = "heading 2", pos = "after") %>%
+        body_add_par(Lines, pos = "after") %>%
+        body_add_flextable(Plot, align = "center")
+      
+    } else {
+      
+      WordDocument <- WordDocument %>% 
+        body_add_par("", pos = "after") %>%
+        body_add_par(Question, style = "heading 2", pos = "after") %>%
+        body_add_par(Lines, pos = "after") %>%
+        body_add_flextable(Plot, align = "center")
+      
+      
+    }
+    
+  }
+  
+  File_Name = paste0(gsub("Results", "Report", File_Name), ".docx")
+  
+  print(WordDocument, target = paste0(getwd(), Outputs, "/", File_Name))
+  print(noquote(paste("Exported:", File_Name)))
+  
+}

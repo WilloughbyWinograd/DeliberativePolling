@@ -14,6 +14,7 @@ Depends:
 	car,
 	leaps,
 	weights,
+	tools,
 	rjson
 Authors@R: 
     person("Willoughby", "Winograd", email = "willjw@stanford.edu", role = c("aut", "cre"))
