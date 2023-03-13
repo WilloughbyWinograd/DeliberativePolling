@@ -909,6 +909,28 @@ for(Question in Questions){
     Lines = paste(Lines, paste0(Line1, ". ", Line2))
   }
   
+  {
+    # Calls the ChatGPT API with the given prompt and returns the answer
+    ask_chatgpt <- function(prompt) {
+      response <- POST(
+        url = "https://api.openai.com/v1/chat/completions", 
+        add_headers(Authorization = paste("Bearer", api_key)),
+        content_type_json(),
+        encode = "json",
+        body = list(
+          model = "gpt-3.5-turbo",
+          messages = list(list(
+            role = "user", 
+            content = prompt
+          ))
+        )
+      )
+      str_trim(content(response)$choices[[1]]$message$content)
+    }
+    
+    Lines <- ask_chatgpt(paste("Rephase the following to send less structured and more human, but do not change the numbers or conclusions. Keep the quoted text unchanged", Lines, sep = ": "))
+  }
+  
   Data = as.data.frame(Data)
   Names = Data[,1]
   Data=Data[,-1]
@@ -916,25 +938,6 @@ for(Question in Questions){
   Data = as.data.frame(Data)
   rownames(Data) = Names
   Data = t(Data)
-  
-  quartzFonts(myFont = c("Arial", "plain", "normal", "normal"))
-  par(family="Arial", cex=.6)
-  Data[Data == 0] = .01
-  percent <- Data[rev(row.names(Data)), ] * 100
-  
-  # Define colors vector
-  colors <- c("#173d6e", "#ac1e2e")
-  
-  par(mar=c(5, 7, 0, 0) + 0.1)
-  
-  # Make the horizontal bar plot with no border
-  #barplot(as.matrix(percent), col=colors, beside=TRUE, horiz=TRUE, border=NA, xlim=c(0, 100), las=1)
-  
-  # Put the legend below the plot
-  legend("bottom", fill=colors, legend=rev(rownames(Data)), ncol=2)
-  
-  # Add label for X axis
-  title(xlab="Agreement (%)")
   
   Data <- as.data.frame(t(Data))
   

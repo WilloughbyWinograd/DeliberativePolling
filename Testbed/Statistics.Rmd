@@ -6,10 +6,14 @@ output:
   pdf_document: default
 ---
 
-```{r Crosstabs}
+```{r Package}
 
-devtools::install_github("WilloughbyWinograd/DeliberativePolling") # Installs custom package
+devtools::install_github("WilloughbyWinograd/DeliberativePolling")
 library(DeliberativePolling)
+
+```
+
+```{r Crosstabs}
 
 Results(
   Dataset = "/Testbed/Inputs/Dataset.xlsx",

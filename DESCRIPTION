@@ -2,7 +2,6 @@ Package: DeliberativePolling
 Title: Analysis for Deliberative Polls
 Version: 0.0.3.0000
 Depends:
-	readxl,
 	openxlsx,
 	dplyr,
 	officer,
@@ -15,7 +14,8 @@ Depends:
 	leaps,
 	weights,
 	tools,
-	rjson
+	rjson,
+	readxl
 Authors@R: 
     person("Willoughby", "Winograd", email = "willjw@stanford.edu", role = c("aut", "cre"))
 Description: This packages is for analyzing datasets from Deliberative Polling events. It was developed by researchers at The Deliberative Democracy Lab at Stanford University.
