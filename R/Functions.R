@@ -1,6 +1,6 @@
 #' Creates crosstabs and a report on results.
 #' @export
-Results = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Means, Only_Significant){
+Results = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Means, Only_Significant, API_Key){
 
   if(missing(Outputs)){Outputs = ""}
   if(missing(Alpha)){Alpha = 0.05}
@@ -8,10 +8,12 @@ Results = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demograph
   if(missing(Only_Means)){Only_Means = FALSE}
   if(missing(Report_Demographic)){Report_Demographic = "Overall"}
   if(missing(Export)){Export = TRUE}
+  if(missing(Export)){Export = TRUE}
+  if(missing(API_Key)){API_Key = "None"}
   
   Crosstab.Ordinal(Dataset, Templates, Outputs, Group1, Group2, Alpha, Only_Significant)
   
-  Crosstab.Nominal(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means)
+  Crosstab.Nominal(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means, API_Key)
 }
 
 #' Formats a dataset for use in Results function.
@@ -142,7 +144,7 @@ Dataset = function(Codebook, Datasets){
 }
 
 #' Creates a crosstab in Excel and Word comparing opinions.
-Crosstab.Nominal = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means){
+Crosstab.Nominal = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means, API_Key){
   
   Template = Templates[1]
   
@@ -932,7 +934,7 @@ Crosstab.Nominal = function(Dataset, Templates, Outputs, Group1, Group2, Report_
     
     # Runs a pre-defined function that creates a report from the crosstabs.
     {
-      if((Demographic_Category == Report_Demographic)&(Group1 == Group2)){Export_Report(Outputs, Crosstabs, File_Name, Name_Group, Demographic_Category)}
+      if((Demographic_Category == Report_Demographic)&(Group1 == Group2)){Export_Report(Outputs, Crosstabs, File_Name, Name_Group, Demographic_Category, API_Key)}
     }
     
   }
@@ -1822,7 +1824,7 @@ Export_Word = function(Export, Outputs, Template, Crosstabs, Codebook, File_Name
       }}}}
 
 #' Exports a report on crosstab in Word.
-Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_Category){
+Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_Category, API_Key){
   
   ReturnText = function(Change){
     if(Change<0){
@@ -1924,14 +1926,12 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
       Lines = paste(Lines, paste0(Line1, ". ", Line2))
     }
     
-    api_key = "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"
-    
-    {
+    if(API_Key != "None"){
       # Calls the ChatGPT API with the given prompt and returns the answer
       ask_chatgpt <- function(prompt) {
         response <- POST(
           url = "https://api.openai.com/v1/chat/completions", 
-          add_headers(Authorization = paste("Bearer", api_key)),
+          add_headers(Authorization = paste("Bearer", API_Key)),
           content_type_json(),
           encode = "json",
           body = list(
