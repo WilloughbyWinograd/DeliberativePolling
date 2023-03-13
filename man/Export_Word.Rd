@@ -2,7 +2,7 @@
 % Please edit documentation in R/Functions.R
 \name{Export_Word}
 \alias{Export_Word}
-\title{Exports crosstab in Word.}
+\title{Exports a crosstab in Word.}
 \usage{
 Export_Word(
   Export,
@@ -17,5 +17,5 @@ Export_Word(
 )
 }
 \description{
-Exports crosstab in Word.
+Exports a crosstab in Word.
 }

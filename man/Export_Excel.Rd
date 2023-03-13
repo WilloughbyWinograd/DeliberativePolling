@@ -2,10 +2,10 @@
 % Please edit documentation in R/Functions.R
 \name{Export_Excel}
 \alias{Export_Excel}
-\title{Exports crosstab in Excel.}
+\title{Exports a crosstab in Excel.}
 \usage{
 Export_Excel(Outputs, Crosstabs, File_Name, Sheet_Name)
 }
 \description{
-Exports crosstab in Excel.
+Exports a crosstab in Excel.
 }

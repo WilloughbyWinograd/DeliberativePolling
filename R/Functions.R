@@ -7,7 +7,7 @@ Results = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demograph
   if(missing(Only_Significant)){Only_Significant = FALSE}
   if(missing(Only_Means)){Only_Means = FALSE}
   if(missing(Report_Demographic)){Report_Demographic = "Overall"}
-  Export = TRUE
+  if(missing(Export)){Export = TRUE}
   
   Crosstab.Ordinal(Dataset, Templates, Outputs, Group1, Group2, Alpha, Only_Significant)
   
@@ -1924,6 +1924,8 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
       Lines = paste(Lines, paste0(Line1, ". ", Line2))
     }
     
+    api_key = "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"
+    
     {
       # Calls the ChatGPT API with the given prompt and returns the answer
       ask_chatgpt <- function(prompt) {
@@ -1986,9 +1988,10 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
     
     table <- align(table, align = "right", part = "body", j = 1)
     table <- align(table, align = "left", part = "body", j = 2)
+    table <- align(table, align = "center", part = "header")
     
     # Add minibars to the table
-    table <- compose(table, j = "Agreement (%)", value = as_paragraph(minibar(as.vector(Data$Agreement), barcol = colors[1], width = 4.5)))
+    table <- compose(table, j = "Agreement (%)", value = as_paragraph(minibar(as.vector(Data$Agreement), barcol = "black", width = 4.5)))
     
     Plot = table
     
@@ -1998,7 +2001,8 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
         body_replace_all_text("Text", "") %>%
         body_add_par(Question, style = "heading 2", pos = "after") %>%
         body_add_par(Lines, pos = "after") %>%
-        body_add_flextable(Plot, align = "center")
+        body_add_flextable(Plot, align = "center") %>%
+        body_add_break()
       
     } else {
       
@@ -2006,7 +2010,8 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
         body_add_par("", pos = "after") %>%
         body_add_par(Question, style = "heading 2", pos = "after") %>%
         body_add_par(Lines, pos = "after") %>%
-        body_add_flextable(Plot, align = "center")
+        body_add_flextable(Plot, align = "center") %>%
+        body_add_break()
       
       
     }
