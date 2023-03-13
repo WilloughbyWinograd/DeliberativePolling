@@ -12,11 +12,11 @@ devtools::install_github("WilloughbyWinograd/DeliberativePolling") # Installs cu
 library(DeliberativePolling)
 
 Results(
-  Dataset = "Test Data/Inputs/Dataset.xlsx",
-  Template = "Test Data/Inputs/Template - Crosstabs.docx",
+  Dataset = "/Testbed/Inputs/Dataset.xlsx",
+  Template = "/Testbed/Inputs/Template - Crosstabs.docx",
   Group1 = c("Participants", "Pre", "Unweighted"),
   Group2 = c("Participants", "Post", "Unweighted"),
-  Outputs = "Test Data/Outputs")
+  Outputs = "/Testbed/Outputs")
 
 ```
 
