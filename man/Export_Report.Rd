@@ -4,7 +4,14 @@
 \alias{Export_Report}
 \title{Exports a report on crosstab in Word.}
 \usage{
-Export_Report(Outputs, Crosstabs, File_Name, Name_Group, Demographic_Category)
+Export_Report(
+  Outputs,
+  Crosstabs,
+  File_Name,
+  Name_Group,
+  Demographic_Category,
+  API_Key
+)
 }
 \description{
 Exports a report on crosstab in Word.

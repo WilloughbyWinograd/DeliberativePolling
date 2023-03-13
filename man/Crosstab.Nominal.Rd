@@ -13,7 +13,8 @@ Crosstab.Nominal(
   Report_Demographic,
   Alpha,
   Only_Significant,
-  Only_Means
+  Only_Means,
+  API_Key
 )
 }
 \description{
