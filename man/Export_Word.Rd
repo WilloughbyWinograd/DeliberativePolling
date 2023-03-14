@@ -5,7 +5,6 @@
 \title{Exports a crosstab in Word.}
 \usage{
 Export_Word(
-  Export,
   Outputs,
   Template,
   Crosstabs,

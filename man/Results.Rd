@@ -2,21 +2,40 @@
 % Please edit documentation in R/Functions.R
 \name{Results}
 \alias{Results}
-\title{Creates crosstabs and a report on results.}
+\title{Returns tables and reports in Microsoft Word and Excel.
+Returns tables and reports in Microsoft Word and Excel.}
 \usage{
 Results(
   Dataset,
-  Templates,
-  Outputs,
-  Group1,
-  Group2,
-  Report_Demographic,
-  Alpha,
-  Only_Means,
-  Only_Significant,
-  API_Key
+  Exports,
+  Group_1 = c(Treatment, Time, Weight),
+  Group_2 = c(Treatment, Time, Weight),
+  Template,
+  API,
+  Significant
 )
 }
+\arguments{
+\item{Dataset}{is the dataset file.}
+
+\item{Exports}{is the optional location of where files should be printed to.}
+
+\item{Group_1}{is a vector containing the treatment group "Participants", time "T1", and weighting variable "Weight 1".}
+
+\item{Group_2}{is a vector containing the treatment group "Nonparticipants", time "T2", and weighting variable "Weight 2".}
+
+\item{Template}{is the Word document that serves as the base from which documents will be printed.}
+
+\item{API}{is an optional API key to call ChatGPT to improve report phrasing.}
+
+\item{Significant}{is an optional value for alpha above which significant tests will not be reported.}
+}
 \description{
-Creates crosstabs and a report on results.
+This function returns three types of outputs.
+\enumerate{
+\item Tables on all nominal data.
+\item Tables on all ordinal data by all nominal data.
+\item A report on all ordinal data by select nominal data.
+This function required a dataset formatted using the "Dataset" function.
+}
 }

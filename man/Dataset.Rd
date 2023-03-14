@@ -2,10 +2,16 @@
 % Please edit documentation in R/Functions.R
 \name{Dataset}
 \alias{Dataset}
-\title{Formats a dataset for use in Results function.}
+\title{Returns list of data frames.
+Returns list of data frames.}
 \usage{
 Dataset(Codebook, Datasets)
 }
+\arguments{
+\item{Codebook}{is a sheet containing a correctly formatted codebook for the dataset file.}
+
+\item{Datasets}{are the unformatted datasets to be formatted to match the codebook.}
+}
 \description{
-Formats a dataset for use in Results function.
+This function returns a list of data frames and the codebook formatted for use in the "Results" function.
 }

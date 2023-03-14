@@ -1,27 +1,58 @@
-#' Creates crosstabs and a report on results.
-#' @export
-Results = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Means, Only_Significant, API_Key){
-
-  if(missing(Outputs)){Outputs = ""}
+#' Returns tables and reports in Microsoft Word and Excel.
+Results = function(
+    Dataset,
+    Exports,
+    Group_1 = c(Treatment, Time, Weight),
+    Group_2 = c(Treatment, Time, Weight),
+    Template,
+    API,
+    Significant
+    ){
+  
+  #' Returns tables and reports in Microsoft Word and Excel.
+  #' 
+  #' @description
+  #' This function returns three types of outputs.
+  #' 1. Tables on all nominal data.
+  #' 2. Tables on all ordinal data by all nominal data.
+  #' 3. A report on all ordinal data by select nominal data.
+  #' This function required a dataset formatted using the "Dataset" function.
+  #' 
+  #' @param Dataset is the dataset file.
+  #' @param Exports is the optional location of where files should be printed to.
+  #' @param Group_1 is a vector containing the treatment group "Participants", time "T1", and weighting variable "Weight 1".
+  #' @param Group_2 is a vector containing the treatment group "Nonparticipants", time "T2", and weighting variable "Weight 2".
+  #' @param Template is the Word document that serves as the base from which documents will be printed.
+  #' @param API is an optional API key to call ChatGPT to improve report phrasing.
+  #' @param Significant is an optional value for alpha above which significant tests will not be reported.
+  #' 
+  #' @export
+  
+  if(missing(Output)){Output = ""}
+  if(missing(Significant)){Significant = TRUE}
   if(missing(Alpha)){Alpha = 0.05}
-  if(missing(Only_Significant)){Only_Significant = FALSE}
-  if(missing(Only_Means)){Only_Means = FALSE}
-  if(missing(Report_Demographic)){Report_Demographic = "Overall"}
-  if(missing(Export)){Export = TRUE}
-  if(missing(Export)){Export = TRUE}
-  if(missing(API_Key)){API_Key = "None"}
+  if(missing(Demographic)){Report_Demographic = "Overall"}
+  if(missing(API)){API = "None"}
   
-  Crosstab.Ordinal(Dataset, Templates, Outputs, Group1, Group2, Alpha, Only_Significant)
-  
-  Crosstab.Nominal(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means, API_Key)
+  Ordinal(Input, cbind(Crosstab[1], Report[1]), Output, Group_1, Group_2, Alpha, !Significant)
+  Nominal(Input, cbind(Crosstab[1], Report[1]), Output, Group_1, Group_2, Demographic, Alpha, !Significant, FALSE, API)
 }
 
-#' Formats a dataset for use in Results function.
-#' @export
-Dataset = function(Codebook, Datasets){
+#' Returns list of data frames.
+Dataset = function(
+    Codebook,
+    Datasets
+    ){
   
-  library(stringr)
-  library(dplyr)
+  #' Returns list of data frames.
+  #' 
+  #' @description
+  #' This function returns a list of data frames and the codebook formatted for use in the "Results" function.
+  #' 
+  #' @param Codebook is a sheet containing a correctly formatted codebook for the dataset file.
+  #' @param Datasets are the unformatted datasets to be formatted to match the codebook.
+  #' 
+  #' @export
   
   for(Dataset_Number in 1:length(Datasets)){
     Dataset = Datasets[[Dataset_Number]]
@@ -143,10 +174,10 @@ Dataset = function(Codebook, Datasets){
   return(list(Datasets, Codebook))
 }
 
+
+
 #' Creates a crosstab in Excel and Word comparing opinions.
-Crosstab.Nominal = function(Dataset, Templates, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means, API_Key){
-  
-  Template = Templates[1]
+Nominal = function(Dataset, Template, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means, API_Key){
   
   # Adds objects to global environment
   assign("Alpha", Alpha, envir = globalenv())
@@ -897,7 +928,7 @@ Crosstab.Nominal = function(Dataset, Templates, Outputs, Group1, Group2, Report_
     
     # Runs a pre-defined function that creates Word documents from the crosstabs.
     {
-      Export_Word(Export, Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type = "Responses", Demographic_Category)
+      Export_Word(Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type = "Responses", Demographic_Category)
     }
     
     # Adds a legend.
@@ -941,9 +972,7 @@ Crosstab.Nominal = function(Dataset, Templates, Outputs, Group1, Group2, Report_
 }
 
 #' Creates a crosstab in Excel and Word comparing demographics
-Crosstab.Ordinal = function(Dataset, Templates, Outputs, Group1, Group2, Alpha, Only_Significant){
-  
-  Template = Templates[1]
+Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant){
   
   # Adds objects to global environment
   assign("Alpha", Alpha, envir = globalenv())
@@ -1158,7 +1187,7 @@ Crosstab.Ordinal = function(Dataset, Templates, Outputs, Group1, Group2, Alpha, 
   
   # Runs a pre-defined function that creates Word documents from the crosstabs.
   {
-    Export_Word(Export, Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type = "Demographics")
+    Export_Word(Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type = "Demographics")
   }
 }
 
@@ -1399,9 +1428,9 @@ Export_Excel = function(Outputs, Crosstabs, File_Name, Sheet_Name){
 }
 
 #' Exports a crosstab in Word.
-Export_Word = function(Export, Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type, Demographic_Category){
+Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type, Demographic_Category){
   
-  if(Export){
+  {
     if(ncol(Crosstabs)<14){
       
       File_Name = paste(File_Name, ".docx", sep = "")
@@ -1870,7 +1899,7 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
   
   Lines_All = paste0("")
   
-  WordDocument <- suppressWarnings(read_docx(paste0(getwd(), Templates[2])))
+  WordDocument <- suppressWarnings(read_docx(paste0(getwd(), Template)))
   
   for(Question in Questions){
     
@@ -1999,7 +2028,7 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
       
       WordDocument <- WordDocument %>%
         body_replace_all_text("Text", "") %>%
-        body_add_par(Question, style = "heading 2", pos = "after") %>%
+        body_add_par(Question, style = "header", pos = "after") %>%
         body_add_par(Lines, pos = "after") %>%
         body_add_flextable(Plot, align = "center") %>%
         body_add_break()
@@ -2008,7 +2037,7 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
       
       WordDocument <- WordDocument %>% 
         body_add_par("", pos = "after") %>%
-        body_add_par(Question, style = "heading 2", pos = "after") %>%
+        body_add_par(Question, style = "header", pos = "after") %>%
         body_add_par(Lines, pos = "after") %>%
         body_add_flextable(Plot, align = "center") %>%
         body_add_break()
