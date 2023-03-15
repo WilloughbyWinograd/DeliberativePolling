@@ -5,14 +5,15 @@
 \title{Exports a crosstab in Word.}
 \usage{
 Export_Word(
-  Outputs,
-  Template,
   Crosstabs,
-  Codebook,
+  Outputs,
   File_Name,
+  Name_Group,
+  Template,
   Document_Title,
   Type,
-  Demographic_Category
+  Demographic_Category,
+  Codebook
 )
 }
 \description{

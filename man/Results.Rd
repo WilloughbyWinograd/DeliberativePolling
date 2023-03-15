@@ -12,7 +12,7 @@ Results(
   Group_2 = c(Treatment, Time, Weight),
   Template,
   API,
-  Significant
+  Significance
 )
 }
 \arguments{

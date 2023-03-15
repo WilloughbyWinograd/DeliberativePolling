@@ -10,7 +10,6 @@ Nominal(
   Outputs,
   Group1,
   Group2,
-  Report_Demographic,
   Alpha,
   Only_Significant,
   Only_Means,

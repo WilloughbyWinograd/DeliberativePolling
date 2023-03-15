@@ -6,7 +6,7 @@ Results = function(
     Group_2 = c(Treatment, Time, Weight),
     Template,
     API,
-    Significant
+    Significance
     ){
   
   #' Returns tables and reports in Microsoft Word and Excel.
@@ -28,14 +28,19 @@ Results = function(
   #' 
   #' @export
   
-  if(missing(Output)){Output = ""}
-  if(missing(Significant)){Significant = TRUE}
+  if(missing(Exports)){Exports = ""}
+  if(missing(Significance)){
+    Only_Significant = FALSE
+    Alpha = -1
+    } else {
+    Only_Significant = TRUE
+    Alpha = Significance
+  }
   if(missing(Alpha)){Alpha = 0.05}
-  if(missing(Demographic)){Report_Demographic = "Overall"}
   if(missing(API)){API = "None"}
   
-  Ordinal(Input, cbind(Crosstab[1], Report[1]), Output, Group_1, Group_2, Alpha, !Significant)
-  Nominal(Input, cbind(Crosstab[1], Report[1]), Output, Group_1, Group_2, Demographic, Alpha, !Significant, FALSE, API)
+  Ordinal(Dataset, Template, Outputs = Exports, Group1 = Group_1, Group2 = Group_2, Alpha, Only_Significant)
+  Nominal(Dataset, Template, Outputs = Exports, Group1 = Group_1, Group2 = Group_2, Alpha, Only_Significant, Only_Means = FALSE, API_Key = API)
 }
 
 #' Returns list of data frames.
@@ -177,7 +182,7 @@ Dataset = function(
 
 
 #' Creates a crosstab in Excel and Word comparing opinions.
-Nominal = function(Dataset, Template, Outputs, Group1, Group2, Report_Demographic, Alpha, Only_Significant, Only_Means, API_Key){
+Nominal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant, Only_Means, API_Key){
   
   # Adds objects to global environment
   assign("Alpha", Alpha, envir = globalenv())
@@ -910,7 +915,7 @@ Nominal = function(Dataset, Template, Outputs, Group1, Group2, Report_Demographi
     {
       if(Weight1 == Weight2){Weights = Weight1}
       if(Weight1!= Weight2){Weights = paste(Weight1, Weight2, sep = " and ")}
-      File_Name = paste("Results", "Nominal", Name_Group, Weights, Demographic_Category, sep = " - ")
+      File_Name = paste("Tables", "Nominal", Name_Group, Weights, Demographic_Category, sep = " - ")
       Document_Title = gsub(" by Overall", "", paste(paste(Name_Group, ", Weighted by ", Weights, sep = ""), Demographic_Category, sep = " by "))
       Document_Title = gsub("Weighted by Unweighted", "Unweighted", Document_Title)
     }
@@ -928,7 +933,7 @@ Nominal = function(Dataset, Template, Outputs, Group1, Group2, Report_Demographi
     
     # Runs a pre-defined function that creates Word documents from the crosstabs.
     {
-      Export_Word(Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type = "Responses", Demographic_Category)
+      Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Nominal", Demographic_Category, Codebook)
     }
     
     # Adds a legend.
@@ -960,12 +965,14 @@ Nominal = function(Dataset, Template, Outputs, Group1, Group2, Report_Demographi
     
     # Runs a pre-defined function that creates Excel spreadsheets from the crosstabs.
     {
-      Export_Excel(Outputs, Crosstabs, File_Name, Name_Group)
+      Export_Excel(Crosstabs, Outputs, File_Name, Name_Group)
     }
     
     # Runs a pre-defined function that creates a report from the crosstabs.
     {
-      if((Demographic_Category == Report_Demographic)&(Group1 == Group2)){Export_Report(Outputs, Crosstabs, File_Name, Name_Group, Demographic_Category, API_Key)}
+      if(Group1 == Group2){
+        Export_Report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Report", Demographic_Category, API_Key, Group1)
+      }
     }
     
   }
@@ -1175,19 +1182,19 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   {
     if(Weight1 == Weight2){Weights = Weight1}
     if(Weight1!= Weight2){Weights = paste(Weight1, Weight2, sep = " and ")}
-    File_Name = paste("Results", "Ordinal", Name_Group, Weights, sep = " - ")
+    File_Name = paste("Tables", "Ordinal", Name_Group, Weights, sep = " - ")
     Document_Title = gsub(" by Overall", "", paste(paste(Name_Group, ", Weighted by ", Weights, sep = "")))
     Document_Title = gsub("Weighted by Unweighted", "Unweighted", Document_Title)
   }
   
   # Runs a pre-defined function that creates Excel spreadsheets from the crosstabs.
   {
-    Export_Excel(Outputs, Crosstabs, File_Name, Name_Group)
+    Export_Excel(Crosstabs, Outputs, File_Name, Name_Group)
   }
   
   # Runs a pre-defined function that creates Word documents from the crosstabs.
   {
-    Export_Word(Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type = "Demographics")
+    Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Ordinal", Demographic_Category, Codebook)
   }
 }
 
@@ -1410,25 +1417,25 @@ Test_Chi_Squared = function(ValuetoMark, Group1, Group2){
 }
 
 #' Exports a crosstab in Excel.
-Export_Excel = function(Outputs, Crosstabs, File_Name, Sheet_Name){
+Export_Excel = function(Crosstabs, Outputs, File_Name, Name_Group){
   
   # Gets the file name.
   File_Name = paste(File_Name, ".xlsx", sep = "")
   
   # Ensures the sheet name is the proper length.
-  if(nchar(Sheet_Name)>31){
-    Sheet_Name = paste(strtrim(Sheet_Name,28), "...", sep = "")
+  if(nchar(Name_Group)>31){
+    Name_Group = paste(strtrim(Name_Group,28), "...", sep = "")
   }
   
   # Exports crosstab to Excel file
-  write.xlsx(Crosstabs, paste0(getwd(), Outputs, "/", File_Name), sheetName = Sheet_Name, showNA = F, colNames = F, rownames = F, overwrite = T)
+  write.xlsx(Crosstabs, paste0(getwd(), Outputs, "/", File_Name), sheetName = Name_Group, showNA = F, colNames = F, rownames = F, overwrite = T)
   
   # Notifies of document export
   print(noquote(paste("Exported:", File_Name)))
 }
 
 #' Exports a crosstab in Word.
-Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Document_Title, Type, Demographic_Category){
+Export_Word = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook){
   
   {
     if(ncol(Crosstabs)<14){
@@ -1439,7 +1446,7 @@ Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Docume
       ColumnNumbers = ncol(Crosstabs)
       RowNumbers = nrow(Crosstabs)
       
-      if(Type == "Responses"){
+      if(Type == "Nominal"){
         
         # Creates a legend.
         Legend = Codebook[-1, match(Demographic_Category, names(Codebook))]
@@ -1516,12 +1523,6 @@ Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Docume
         SampleSizes = fontsize(SampleSizes, size = 8, part = "all")
         Crosstabs = fontsize(Crosstabs, size = 8, part = "all")
         
-        # Sets font type
-        Legend = font(Legend, fontname = "Arial", part = "all")
-        Titles = font(Titles, fontname = "Arial", part = "all")
-        SampleSizes = font(SampleSizes, fontname = "Arial", part = "all")
-        Crosstabs = font(Crosstabs, fontname = "Arial", part = "all")
-        
         # Sets the borders on the tables
         Legend = border_remove(Legend)
         Titles = border_remove(Titles)
@@ -1552,7 +1553,7 @@ Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Docume
         Crosstabs = align(Crosstabs, align = "center", part = "header")
         
         # Sets the description on the document footer.
-        Description = "T1 is before deliberation. T2 is after deliberation. Numbers not in parentheses are mean responses or percentages. Numbers in parentheses are p-values resulting from a t-test."
+        Description = "Numbers not in parentheses are mean responses or percentages. Numbers in parentheses are p-values resulting from a t-test."
         
         # Creates the Word document for export
         if(!class(try((suppressWarnings(read_docx(paste0(getwd(), Template)) %>%
@@ -1576,193 +1577,14 @@ Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Docume
                                             body_add_flextable(SampleSizes, align = "left") %>%
                                             body_add_par("", pos = "after") %>%
                                             body_add_flextable(Crosstabs, align = "left") %>%
-                                            headers_replace_all_text("Type", Type) %>%
-                                            headers_replace_all_text("Title", Document_Title) %>%
-                                            footers_replace_all_text("Description", Description))
+                                            headers_replace_all_text("Title", Type) %>%
+                                            headers_replace_all_text("Subtitle", Document_Title) %>%
+                                            footers_replace_all_text("Details", Description))
         }
         else {print("Cannot export Word version due to large file size or template error.")}
       }
       
-      if(Type == "Detailed Responses"){
-        
-        # Gets the headers and sets them as the column names
-        ColumnNames = Crosstabs[1,]
-        Crosstabs = Crosstabs[-(1),]
-        
-        # Converts the dataframes to flextables
-        Crosstabs = flextable(Crosstabs)
-        
-        # Deletes excess header.
-        Crosstabs = delete_part(Crosstabs, part = "header")
-        
-        # Adds correct header row
-        Crosstabs = add_header_row(Crosstabs, top = TRUE, values = ColumnNames)
-        
-        # Sets the widths of the columns and heights of the rows
-        Crosstabs = width(Crosstabs, j = 1, width = 1.0)
-        Crosstabs = width(Crosstabs, j = 2, width = 2.5)
-        
-        # Sets the widths of the columns depending on the number of columns
-        Crosstabs = width(Crosstabs, j = 3:(ColumnNumbers), width = 1.2)
-        
-        # Sets font size
-        Crosstabs = fontsize(Crosstabs, size = 8, part = "all")
-        
-        # Sets font type
-        Crosstabs = font(Crosstabs, fontname = "Arial", part = "all")
-        
-        # Sets the borders on the tables
-        Crosstabs = border_remove(Crosstabs)
-        Crosstabs = border(Crosstabs, border.bottom = fp_border(color = "black", style = "solid", width = 1), part = "header")
-        Crosstabs = border(Crosstabs, border.right = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        
-        # Bolds the text
-        Crosstabs = bold(Crosstabs, j = 1, bold = TRUE, part = "body")
-        Crosstabs = bold(Crosstabs, bold = TRUE, part = "header")
-        
-        # Aligns the text
-        Crosstabs = align(Crosstabs, j = 1:2, align = "left", part = "all")
-        Crosstabs = align(Crosstabs, j = 3:5, align = "center", part = "all")
-        Crosstabs = align(Crosstabs, align = "center", part = "header")
-        
-        # Sets the description on the document footer.
-        Description = "T1 is before deliberation. T2 is after deliberation. Numbers not in parentheses are mean responses or percentages. Numbers in parentheses are p-values resulting from a t-test."
-        
-        # Creates the Word document for export
-        WordDocument = suppressWarnings(read_docx(paste0(getwd(), Template)) %>%
-                                          body_add_par("", pos = "after") %>%
-                                          body_add_flextable(Crosstabs, align = "left") %>%
-                                          headers_replace_all_text("Type", Type) %>%
-                                          headers_replace_all_text("Title", Document_Title) %>%
-                                          footers_replace_all_text("Description", Description))
-      }
-      
-      if(Type == "Regressions"){
-        
-        # Gets the headers and sets them as the column names
-        ColumnNames = Crosstabs[1,]
-        Crosstabs = Crosstabs[-(1),]
-        
-        # Converts the dataframes to flextables
-        Crosstabs = flextable(Crosstabs)
-        
-        # Deletes excess header.
-        Crosstabs = delete_part(Crosstabs, part = "header")
-        
-        # Adds correct header row
-        Crosstabs = add_header_row(Crosstabs, top = TRUE, values = ColumnNames)
-        
-        # Sets font size
-        Crosstabs = fontsize(Crosstabs, size = 5, part = "all")
-        
-        # Sets font type
-        Crosstabs = font(Crosstabs, fontname = "Arial", part = "all")
-        
-        # Sets the borders on the tables
-        Crosstabs = border_remove(Crosstabs)
-        Crosstabs = border(Crosstabs, j = 3:ColumnNumbers, i = 1, border.top = fp_border(color = "grey", style = "solid", width = 0.5), part = "body")
-        Crosstabs = border(Crosstabs, i = 2:(RowNumbers-1), border.right = fp_border(color = "grey", style = "solid", width = 0.5), part = "body")
-        Crosstabs = border(Crosstabs, j = 2:ColumnNumbers, border.bottom = fp_border(color = "grey", style = "solid", width = 0.5), border.right = fp_border(color = "grey", style = "solid", width = 0.5), part = "body")
-        Crosstabs = border(Crosstabs, j = 3:ColumnNumbers, i = 1, border.bottom = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, j = 2, i = 2:(RowNumbers-1), border.right = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        
-        # Bolds the text
-        Crosstabs = bold(Crosstabs, j = 1, bold = TRUE, part = "body")
-        Crosstabs = bold(Crosstabs, bold = TRUE, part = "header")
-        
-        # Aligns the text
-        Crosstabs = align(Crosstabs, j = 1, align = "left", part = "all")
-        Crosstabs = align(Crosstabs, j = 2:ColumnNumbers, align = "center", part = "all")
-        
-        # Merges cells
-        Crosstabs = merge_at(Crosstabs, j = 2:ColumnNumbers, part = "header")
-        Crosstabs = merge_at(Crosstabs, j = 1, i = 1:(RowNumbers-1), part = "body")
-        
-        # Rotates cell
-        Crosstabs = rotate(Crosstabs, j = 1, i = 1:(RowNumbers-1), rotation = "btlr", align = "center", part = "body")
-        
-        # Sets the heights and widths of the columns and heights of the rows
-        Crosstabs = width(Crosstabs, width = 0.4)
-        Crosstabs = width(Crosstabs, j = 1, width = 0.4)
-        Crosstabs = height(Crosstabs, height = 0.4, part = "header")
-        Crosstabs = height(Crosstabs, height = 0.4, part = "body")
-        
-        # Sets the description on the document footer.
-        Description = "T1 is before deliberation. T2 is after deliberation. T2-T1 is the difference between before and after deliberation. Numbers not in parentheses are correlation coefficients. Numbers in parentheses are p-values resulting from an F-test or t-test."
-        
-        # Creates the Word document for export
-        WordDocument = suppressWarnings(read_docx(paste0(getwd(), Template)) %>%
-                                          body_add_par("", pos = "after") %>%
-                                          body_add_flextable(Crosstabs, align = "left") %>%
-                                          headers_replace_all_text("Type", Type) %>%
-                                          headers_replace_all_text("Title", Document_Title) %>%
-                                          footers_replace_all_text("Description", Description))
-      }
-      
-      if(Type == "Multiple Regressions"){
-        
-        # Gets sequential numbers for the column names
-        colnames(Crosstabs) = seq(1, ncol(Crosstabs), 1)
-        
-        # Converts the dataframes to flextables
-        Crosstabs = flextable(Crosstabs)
-        
-        # Deletes excess header.
-        Crosstabs = delete_part(Crosstabs, part = "header")
-        
-        # Sets the heights and widths of the columns and heights of the rows
-        Crosstabs = width(Crosstabs, width = 1.0)
-        Crosstabs = width(Crosstabs, j = 3, width = 1.2)
-        
-        # Sets font size
-        Crosstabs = fontsize(Crosstabs, size = 8, part = "all")
-        
-        # Sets font type
-        Crosstabs = font(Crosstabs, fontname = "Arial", part = "all")
-        
-        # Sets the borders on the tables
-        Crosstabs = border_remove(Crosstabs)
-        Crosstabs = border(Crosstabs, i = (1+0*RowNumbers/6), j = 1:6, border.bottom = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+1*RowNumbers/6), j = 1:6, border.bottom = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+2*RowNumbers/6), j = 1:6, border.bottom = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+3*RowNumbers/6), j = 1:6, border.bottom = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+4*RowNumbers/6), j = 1:6, border.bottom = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+5*RowNumbers/6), j = 1:6, border.bottom = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+0*RowNumbers/6):(1*RowNumbers/6-1), j = 1, border.right = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+1*RowNumbers/6):(2*RowNumbers/6-1), j = 1, border.right = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+2*RowNumbers/6):(3*RowNumbers/6-1), j = 1, border.right = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+3*RowNumbers/6):(4*RowNumbers/6-1), j = 1, border.right = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+4*RowNumbers/6):(5*RowNumbers/6-1), j = 1, border.right = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        Crosstabs = border(Crosstabs, i = (1+5*RowNumbers/6):(6*RowNumbers/6-1), j = 1, border.right = fp_border(color = "black", style = "solid", width = 1), part = "body")
-        
-        # Bolds the text
-        Crosstabs = bold(Crosstabs, j = 1, bold = TRUE, part = "body")
-        Crosstabs = bold(Crosstabs, j = 8, bold = TRUE, part = "body")
-        Crosstabs = bold(Crosstabs, i = (1+0*RowNumbers/6), j = 1:6, bold = TRUE, part = "body")
-        Crosstabs = bold(Crosstabs, i = (1+1*RowNumbers/6), j = 1:6, bold = TRUE, part = "body")
-        Crosstabs = bold(Crosstabs, i = (1+2*RowNumbers/6), j = 1:6, bold = TRUE, part = "body")
-        Crosstabs = bold(Crosstabs, i = (1+3*RowNumbers/6), j = 1:6, bold = TRUE, part = "body")
-        Crosstabs = bold(Crosstabs, i = (1+4*RowNumbers/6), j = 1:6, bold = TRUE, part = "body")
-        Crosstabs = bold(Crosstabs, i = (1+5*RowNumbers/6), j = 1:6, bold = TRUE, part = "body")
-        
-        # Aligns the text
-        Crosstabs = align(Crosstabs, align = "center", part = "all")
-        Crosstabs = align(Crosstabs, j = 1, align = "left", part = "all")
-        Crosstabs = align(Crosstabs, j = 8:9, align = "left", part = "all")
-        
-        # Sets the description on the document footer.
-        Description = "T1 is before deliberation. T2 is after deliberation. T2-T1 is the difference between before and after deliberation."
-        
-        # Creates the Word document for export
-        WordDocument = suppressWarnings(read_docx(paste0(getwd(), Template)) %>%
-                                          body_add_par("", pos = "after") %>%
-                                          body_add_flextable(Crosstabs, align = "left") %>%
-                                          headers_replace_all_text("Type", Type) %>%
-                                          headers_replace_all_text("Title", Document_Title) %>%
-                                          footers_replace_all_text("Description", Description))
-      }
-      
-      if(Type == "Demographics"){
+      if(Type == "Ordinal"){
         
         # Gets the column names of the crosstabs
         ColumnNames = Crosstabs[4,]
@@ -1801,10 +1623,6 @@ Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Docume
         SampleSizes = fontsize(SampleSizes, size = 8, part = "all")
         Crosstabs = fontsize(Crosstabs, size = 8, part = "all")
         
-        # Sets font type
-        SampleSizes = font(SampleSizes, fontname = "Arial", part = "all")
-        Crosstabs = font(Crosstabs, fontname = "Arial", part = "all")
-        
         # Sets the borders on the tables
         SampleSizes = border_remove(SampleSizes)
         Crosstabs = border_remove(Crosstabs)
@@ -1823,7 +1641,7 @@ Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Docume
         Crosstabs = align(Crosstabs, align = "center", part = "header")
         
         # Sets the description on the document footer.
-        Description = "T1 is before deliberation. T2 is after deliberation. Numbers not in parentheses are rounded counts. Numbers in parentheses are percentages or p-values resulting from a chi-squared test."
+        Description = "Numbers not in parentheses are rounded counts. Numbers in parentheses are percentages or p-values resulting from a chi-squared test."
         
         # Creates the Word document for export
         if(!class(try((suppressWarnings(read_docx(paste0(getwd(), Template)) %>%
@@ -1831,17 +1649,17 @@ Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Docume
                                         body_add_flextable(SampleSizes, align = "left") %>%
                                         body_add_par("", pos = "after") %>%
                                         body_add_flextable(Crosstabs, align = "left") %>%
-                                        headers_replace_all_text("Type", Type) %>%
-                                        headers_replace_all_text("Title", Document_Title) %>%
-                                        footers_replace_all_text("Description", Description))),silent = TRUE)) == "try-error"){
+                                        headers_replace_all_text("Title", Type) %>%
+                                        headers_replace_all_text("Subtitle", Document_Title) %>%
+                                        footers_replace_all_text("Details", Description))),silent = TRUE)) == "try-error"){
           WordDocument = suppressWarnings(read_docx(paste0(getwd(), Template)) %>%
                                             body_add_par("", pos = "after") %>%
                                             body_add_flextable(SampleSizes, align = "left") %>%
                                             body_add_par("", pos = "after") %>%
                                             body_add_flextable(Crosstabs, align = "left") %>%
-                                            headers_replace_all_text("Type", Type) %>%
-                                            headers_replace_all_text("Title", Document_Title) %>%
-                                            footers_replace_all_text("Description", Description))
+                                            headers_replace_all_text("Title", Type) %>%
+                                            headers_replace_all_text("Subtitle", Document_Title) %>%
+                                            footers_replace_all_text("Details", Description))
         }
         else {print("Cannot export Word version due to large file size or template error.")}
       }
@@ -1853,7 +1671,7 @@ Export_Word = function(Outputs, Template, Crosstabs, Codebook, File_Name, Docume
       }}}}
 
 #' Exports a report on crosstab in Word.
-Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_Category, API_Key){
+Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, API_Key, Group1){
   
   ReturnText = function(Change){
     if(Change<0){
@@ -1863,21 +1681,21 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
       return("increased")
     }
     if(Change==0){
-      return("stayed the same")
+      return("did not change")
     }
   }
   
-  Stance = function(support_percent, opposition_percent){
+  Stance = function(support_percent, opposition_percent, Stance_Negative, Stance_Positive){
     if (support_percent >= 0.67) {
-      return("super majority support")
+      return(paste("a supermajority selected", Stance_Positive))
     } else if (support_percent > 0.5) {
-      return("majority support")
-    } else if (opposition_percent > 0.5) {
-      return("majority opposition")
-    } else if (opposition_percent >= 0.33) {
-      return("no majority support")
+      return(paste("a majority selected", Stance_Positive))
+    } else if (opposition_percent > 0.67) {
+      return(paste("a supermajority selected", Stance_Negative))
+    } else if (opposition_percent >= 0.5) {
+      return(paste("a majority selected", Stance_Negative))
     } else {
-      return("no majority opposition")
+      return("there was no majority")
     }
   }
   
@@ -1889,7 +1707,35 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
     return(paste0(abs(Percent*100),"%"))
   }
   
+  
+  # Function to add "P=" inside parenthesis
+  add_P_in_parenthesis <- function(s) {
+    # Check if there are parentheses in the string
+    if (grepl("\\(.*\\)", s)) {
+      # Add "P=" inside the parentheses
+      return(gsub("(\\()(.*)(\\))", "\\1P = \\2\\3", s))
+    } else {
+      # Return the original string if no parentheses are present
+      return(s)
+    }
+  }
+  
+  extract_first_numeric <- function(s) {
+    # Split the string using space or opening parenthesis as the delimiter
+    split_string <- strsplit(s, split = " |\\(")
+    
+    # Extract the first part of the split string (numeric value)
+    first_part <- split_string[[1]][1]
+    
+    # Convert the first part to a numeric value
+    numeric_value <- as.numeric(first_part)
+    
+    return(numeric_value)
+  }
+  
   Legend = Crosstabs[2:(which(Crosstabs[2] == "Prompt and Responses")-6), 2]
+  
+  if(length(Legend) < 6){
   Tabs = Crosstabs[(2+which(Crosstabs[2] == "Prompt and Responses")):nrow(Crosstabs), ]
   
   Questions = unique(Tabs$ID)
@@ -1897,20 +1743,21 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
   
   Subject = Group1
   
-  Lines_All = paste0("")
-  
   WordDocument <- suppressWarnings(read_docx(paste0(getwd(), Template)))
   
   for(Question in Questions){
     
     Tab = Tabs[which(Tabs$ID == Question):(which(Tabs$ID == Question)+4),]
     
+    Stance_Negative = paste0("\"", Tab[2,2], "\"")
+    Stance_Positive = paste0("\"", Tab[4,2], "\"")
+    
     Text = (Crosstabs[which(Crosstabs == Question), 2])
     
-    Lines = paste0(Subject, " were asked to give their agreement that, \"", gsub("\\.", "", Text), "\"")
+    Lines = paste0(tolower(Subject), " were asked to respond to the statement, \"", gsub("\\.", "", Text), "\"")
     
     # Create the matrix with the specified headings
-    Data <- matrix(ncol=3, nrow=0, dimnames=list(NULL, c("Group", "Agreement Before Deliberation", "Agreement After Deliberation")))
+    Data <- matrix(ncol=3, nrow=0, dimnames=list(NULL, c("Group", paste("Selected", Stance_Positive, "Before Deliberation"), paste("Selected", Stance_Positive, "Before Deliberation"))))
     
     for(Group in Legend){
       
@@ -1922,7 +1769,7 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
         Group = Subject
         Note = " "
       } else {
-        Group = paste("those who self-identified as", Group)
+        Group = paste("those who selected", Group)
         Note = " among this group "
       }
       
@@ -1932,24 +1779,23 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
       End_Mean = Group_Results[1,2]
       Change_Mean = Group_Results[1,3]
       
-      Beg_Support = Convert_Percentage(Group_Results[2,1])
-      End_Support = Convert_Percentage(Group_Results[2,2])
-      Change_Support = Convert_Percentage(Group_Results[2,3])
+      Beg_Support = Convert_Percentage(Group_Results[4,1])
+      End_Support = Convert_Percentage(Group_Results[4,2])
+      Change_Support = Convert_Percentage(Group_Results[4,3])
       
-      Beg_Opposition = Convert_Percentage(Group_Results[4,1])
-      End_Opposition = Convert_Percentage(Group_Results[4,2])
-      Change_Opposition = Convert_Percentage(Group_Results[4,3])
+      Beg_Opposition = Convert_Percentage(Group_Results[2,1])
+      End_Opposition = Convert_Percentage(Group_Results[2,2])
+      Change_Opposition = Convert_Percentage(Group_Results[2,3])
       
       Data = rbind(Data, c(Group_Original, Beg_Support, End_Support))
       
-      if(abs(Change_Support) > abs(Change_Opposition)){ Line1 = paste("Among", paste0(Group,","),  "support", ReturnText(Change_Support), "by", FormatPercentage(Change_Support))}
-      if(abs(Change_Support) < abs(Change_Opposition)){ Line1 = paste("Among", paste0(Group,","),  "opposition", ReturnText(Change_Opposition), "by", FormatPercentage(Change_Opposition))}
-      if(abs(Change_Support) == abs(Change_Opposition)){ Line1 = paste("Among", paste0(Group,","),  "support", ReturnText(Change_Opposition))}
+      if(extract_first_numeric(Change_Mean) != 0){ Line1 = paste("Among", paste0(Group,","),  "the mean rating", ReturnText(Change_Support), "by", add_P_in_parenthesis(Change_Mean))} else {
+        Line1 = paste("Among", paste0(Group,","), "the mean rating did not change")}
       
-      if(Stance(End_Support, End_Opposition) == Stance(Beg_Support, Beg_Opposition)){
-        Line2 = paste0("After deliberation there was ", Stance(End_Support, End_Opposition), Note, "just as before deliberation.")
+      if(Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive) == Stance(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive)){
+        Line2 = paste0("After deliberation ", Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive), Note, "like before deliberation.")
       } else {
-        Line2 = paste0("Before deliberation there was ", Stance(Beg_Support, Beg_Opposition), " while after deliberation there was ", Stance(End_Support, End_Opposition), ".")
+        Line2 = paste0("Before deliberation ", Stance(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive), " while after deliberation ", Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive), ".")
       }
       
       Lines = paste(Lines, paste0(Line1, ". ", Line2))
@@ -1990,8 +1836,8 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
     Data1 = Data[1]
     Data2 = Data[2]
     
-    names(Data1)[1] = "Agreement (%)"
-    names(Data2)[1] = "Agreement (%)"
+    names(Data1)[1] = paste("Selected", Stance_Positive, "(%)")
+    names(Data2)[1] = paste("Selected", Stance_Positive, "(%)")
     
     rownames(Data1) = paste(rownames(Data1), "(Before)")
     rownames(Data2) = paste(rownames(Data2), "(After)")
@@ -2020,36 +1866,27 @@ Export_Report = function(Outputs, Crosstabs, File_Name, Name_Group, Demographic_
     table <- align(table, align = "center", part = "header")
     
     # Add minibars to the table
-    table <- compose(table, j = "Agreement (%)", value = as_paragraph(minibar(as.vector(Data$Agreement), barcol = "black", width = 4.5)))
-    
+    table <- compose(table, j = 2, value = as_paragraph(minibar(as.vector(unlist(Data[2])), barcol = "black", width = 4.5)))
+
     Plot = table
     
-    if(Questions[1] == Question){
-      
-      WordDocument <- WordDocument %>%
-        body_replace_all_text("Text", "") %>%
-        body_add_par(Question, style = "header", pos = "after") %>%
-        body_add_par(Lines, pos = "after") %>%
-        body_add_flextable(Plot, align = "center") %>%
-        body_add_break()
-      
-    } else {
-      
-      WordDocument <- WordDocument %>% 
-        body_add_par("", pos = "after") %>%
-        body_add_par(Question, style = "header", pos = "after") %>%
-        body_add_par(Lines, pos = "after") %>%
-        body_add_flextable(Plot, align = "center") %>%
-        body_add_break()
-      
-      
-    }
+    Description = ""
+    
+    WordDocument <- WordDocument %>% 
+      body_add_par(Question, style = "heading 1", pos = "after") %>%
+      body_add_par(Lines, pos = "after") %>%
+      body_add_par("", pos = "after") %>%
+      body_add_flextable(Plot, align = "center") %>%
+      headers_replace_all_text("Title", Type) %>%
+      headers_replace_all_text("Subtitle", Document_Title) %>%
+      footers_replace_all_text("Details", Description) %>%
+      body_add_break()
     
   }
   
-  File_Name = paste0(gsub("Results", "Report", File_Name), ".docx")
+  File_Name = paste0(gsub("Tables", "Report", File_Name), ".docx")
   
   print(WordDocument, target = paste0(getwd(), Outputs, "/", File_Name))
   print(noquote(paste("Exported:", File_Name)))
   
-}
+}}

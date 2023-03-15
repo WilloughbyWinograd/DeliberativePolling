@@ -5,12 +5,16 @@
 \title{Exports a report on crosstab in Word.}
 \usage{
 Export_Report(
-  Outputs,
   Crosstabs,
+  Outputs,
   File_Name,
   Name_Group,
+  Template,
+  Document_Title,
+  Type,
   Demographic_Category,
-  API_Key
+  API_Key,
+  Group1
 )
 }
 \description{

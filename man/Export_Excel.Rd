@@ -4,7 +4,7 @@
 \alias{Export_Excel}
 \title{Exports a crosstab in Excel.}
 \usage{
-Export_Excel(Outputs, Crosstabs, File_Name, Sheet_Name)
+Export_Excel(Crosstabs, Outputs, File_Name, Name_Group)
 }
 \description{
 Exports a crosstab in Excel.
