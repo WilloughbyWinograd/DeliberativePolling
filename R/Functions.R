@@ -1835,8 +1835,9 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
         str_trim(content(response)$choices[[1]]$message$content)
       }
       
-      Lines <- ask_chatgpt(paste("Rephase the following to send less structured and more human, but do not change the numbers or conclusions. Keep the quoted text unchanged", Lines, sep = ": "))
+      Lines <- ask_chatgpt(paste("Rephase the following to sound less structured and more human, but do not change the numbers or conclusions. Keep the numbers the same. Don't remove the word deliberation:", Lines))
     }
+    if(length(Lines) == 0){Lines = "API error. Ensure there is a valid API key for ChatGPT."}
     
     Data = as.data.frame(Data)
     Names = Data[,1]
