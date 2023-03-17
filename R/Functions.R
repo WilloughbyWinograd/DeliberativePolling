@@ -31,12 +31,11 @@ Results = function(
   if(missing(Exports)){Exports = ""}
   if(missing(Significance)){
     Only_Significant = FALSE
-    Alpha = -1
+    Alpha = 0.05
     } else {
     Only_Significant = TRUE
     Alpha = Significance
   }
-  if(missing(Alpha)){Alpha = 0.05}
   if(missing(API)){API = "None"}
   
   Ordinal(Dataset, Template, Outputs = Exports, Group1 = Group_1, Group2 = Group_2, Alpha, Only_Significant)
@@ -1699,6 +1698,20 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     }
   }
   
+  Stance_Percentage = function(support_percent, opposition_percent, Stance_Negative, Stance_Positive){
+    if (support_percent >= 0.67) {
+      return(paste("a supermajority selected", Stance_Positive, paste0("(",FormatPercentage(support_percent),")")))
+    } else if (support_percent > 0.5) {
+      return(paste("a majority selected", Stance_Positive, paste0("(",FormatPercentage(support_percent),")")))
+    } else if (opposition_percent > 0.67) {
+      return(paste("a supermajority selected", Stance_Negative, paste0("(",FormatPercentage(opposition_percent),")")))
+    } else if (opposition_percent >= 0.5) {
+      return(paste("a majority selected", Stance_Negative, paste0("(",FormatPercentage(opposition_percent),")")))
+    } else {
+      return(paste("there was no majority for", Stance_Positive, paste0("(",FormatPercentage(support_percent),")"), "or", Stance_Negative, paste0("(",FormatPercentage(opposition_percent),")")))
+    }
+  }
+  
   Convert_Percentage = function(Percentage){
     return(as.numeric(sub("%", "", Percentage))/100)
   }
@@ -1734,6 +1747,7 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
   }
   
   Legend = Crosstabs[2:(which(Crosstabs[2] == "Prompt and Responses")-6), 2]
+  SampleSizes = Crosstabs[(which(Crosstabs[2] == "Prompt and Responses")-2), 3:(2+length(Legend))]
   
   if(length(Legend) < 6){
   Tabs = Crosstabs[(2+which(Crosstabs[2] == "Prompt and Responses")):nrow(Crosstabs), ]
@@ -1754,10 +1768,11 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     
     Text = (Crosstabs[which(Crosstabs == Question), 2])
     
-    Lines = paste0(tolower(Subject), " were asked to respond to the statement, \"", gsub("\\.", "", Text), "\"")
+    Lines = paste0(tools::toTitleCase(Subject), " were asked to respond to the statement, \"", gsub("\\.", "", Text), "\"", ".")
+    Subject = tolower(Subject)
     
     # Create the matrix with the specified headings
-    Data <- matrix(ncol=3, nrow=0, dimnames=list(NULL, c("Group", paste("Selected", Stance_Positive, "Before Deliberation"), paste("Selected", Stance_Positive, "Before Deliberation"))))
+    Data <- matrix(ncol=3, nrow=0, dimnames=list(NULL, c("Group", paste("Selected", Stance_Positive, "Before Deliberation"), paste("Selected", Stance_Positive, "After Deliberation"))))
     
     for(Group in Legend){
       
@@ -1767,10 +1782,8 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
       
       if(Group == "Total"){
         Group = Subject
-        Note = " "
       } else {
         Group = paste("those who selected", Group)
-        Note = " among this group "
       }
       
       Group_Results = Tab[seq(Index + 2, length.out = 3, by = 1+length(Legend))]
@@ -1787,19 +1800,21 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
       End_Opposition = Convert_Percentage(Group_Results[2,2])
       Change_Opposition = Convert_Percentage(Group_Results[2,3])
       
-      Data = rbind(Data, c(Group_Original, Beg_Support, End_Support))
-      
-      if(extract_first_numeric(Change_Mean) != 0){ Line1 = paste("Among", paste0(Group,","),  "the mean rating", ReturnText(Change_Support), "by", add_P_in_parenthesis(Change_Mean))} else {
-        Line1 = paste("Among", paste0(Group,","), "the mean rating did not change")}
-      
-      if(Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive) == Stance(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive)){
-        Line2 = paste0("After deliberation ", Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive), Note, "like before deliberation.")
-      } else {
-        Line2 = paste0("Before deliberation ", Stance(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive), " while after deliberation ", Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive), ".")
-      }
-      
-      Lines = paste(Lines, paste0(Line1, ". ", Line2))
-    }
+      if(!(is.na(Change_Mean) || Change_Mean == "")){
+        
+        Data = rbind(Data, c(Group_Original, Beg_Support, End_Support))
+        
+        if(extract_first_numeric(Change_Mean) != 0){ Line1 = paste("Among", paste0(Group),  paste0("(", SampleSizes[Index], ")", ","), "the mean rating", ReturnText(Change_Mean), "by", add_P_in_parenthesis(Change_Mean))} else {
+          Line1 = paste("Among", paste0(Group,","), "the mean rating did not change")}
+        
+        if(Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive) == Stance(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive)){
+          Line2 = paste0("After deliberation ", Stance_Percentage(End_Support, End_Opposition, Stance_Negative, Stance_Positive), " among this group, similar to before deliberation.")
+        } else {
+          Line2 = paste0("Before deliberation ", Stance_Percentage(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive), " among this group, while after deliberation ", Stance_Percentage(End_Support, End_Opposition, Stance_Negative, Stance_Positive), ".")
+        }
+        
+        Lines = paste(Lines, paste0(Line1, ". ", Line2))
+      }}
     
     if(API_Key != "None"){
       # Calls the ChatGPT API with the given prompt and returns the answer
@@ -1828,7 +1843,14 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     Data=Data[,-1]
     Data = apply(Data, 2, as.numeric)
     Data = as.data.frame(Data)
-    rownames(Data) = Names
+    
+    if(Demographic_Category != "Overall"){
+      rownames(Data) = Names
+    } else {
+      Data = t(Data)
+      rownames(Data) = Names
+    }
+    
     Data = t(Data)
     
     Data <- as.data.frame(t(Data))
@@ -1872,7 +1894,7 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     
     Description = ""
     
-    WordDocument <- WordDocument %>% 
+    WordDocument <- suppressWarnings(WordDocument %>% 
       body_add_par(Question, style = "heading 1", pos = "after") %>%
       body_add_par(Lines, pos = "after") %>%
       body_add_par("", pos = "after") %>%
@@ -1880,7 +1902,7 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
       headers_replace_all_text("Title", Type) %>%
       headers_replace_all_text("Subtitle", Document_Title) %>%
       footers_replace_all_text("Details", Description) %>%
-      body_add_break()
+      body_add_break())
     
   }
   
