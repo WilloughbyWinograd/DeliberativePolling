@@ -43,7 +43,7 @@ Results = function(
 }
 
 #' Returns list of data frames.
-Dataset = function(
+Format = function(
     Codebook,
     Datasets
     ){
@@ -1686,13 +1686,13 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
   
   Stance = function(support_percent, opposition_percent, Stance_Negative, Stance_Positive){
     if (support_percent >= 0.67) {
-      return(paste("a supermajority selected", Stance_Positive))
+      return(paste("a supermajority selected", tolower(Stance_Positive)))
     } else if (support_percent > 0.5) {
-      return(paste("a majority selected", Stance_Positive))
+      return(paste("a majority selected", tolower(Stance_Positive)))
     } else if (opposition_percent > 0.67) {
-      return(paste("a supermajority selected", Stance_Negative))
+      return(paste("a supermajority selected", tolower(Stance_Negative)))
     } else if (opposition_percent >= 0.5) {
-      return(paste("a majority selected", Stance_Negative))
+      return(paste("a majority selected", tolower(Stance_Negative)))
     } else {
       return("there was no majority")
     }
@@ -1700,15 +1700,15 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
   
   Stance_Percentage = function(support_percent, opposition_percent, Stance_Negative, Stance_Positive){
     if (support_percent >= 0.67) {
-      return(paste("a supermajority selected", Stance_Positive, paste0("(",FormatPercentage(support_percent),")")))
+      return(paste("a supermajority selected", tolower(Stance_Positive), paste0("(",FormatPercentage(support_percent),")")))
     } else if (support_percent > 0.5) {
-      return(paste("a majority selected", Stance_Positive, paste0("(",FormatPercentage(support_percent),")")))
+      return(paste("a majority selected", tolower(Stance_Positive), paste0("(",FormatPercentage(support_percent),")")))
     } else if (opposition_percent > 0.67) {
-      return(paste("a supermajority selected", Stance_Negative, paste0("(",FormatPercentage(opposition_percent),")")))
+      return(paste("a supermajority selected", tolower(Stance_Negative), paste0("(",FormatPercentage(opposition_percent),")")))
     } else if (opposition_percent >= 0.5) {
-      return(paste("a majority selected", Stance_Negative, paste0("(",FormatPercentage(opposition_percent),")")))
+      return(paste("a majority selected", tolower(Stance_Negative), paste0("(",FormatPercentage(opposition_percent),")")))
     } else {
-      return(paste("there was no majority for", Stance_Positive, paste0("(",FormatPercentage(support_percent),")"), "or", Stance_Negative, paste0("(",FormatPercentage(opposition_percent),")")))
+      return(paste("there was no majority for", tolower(Stance_Positive), paste0("(",FormatPercentage(support_percent),")"), "or", Stance_Negative, paste0("(",FormatPercentage(opposition_percent),")")))
     }
   }
   
@@ -1763,8 +1763,8 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     
     Tab = Tabs[which(Tabs$ID == Question):(which(Tabs$ID == Question)+4),]
     
-    Stance_Negative = paste0("\"", Tab[2,2], "\"")
-    Stance_Positive = paste0("\"", Tab[4,2], "\"")
+    Stance_Negative = paste0("\"", (Tab[2,2]), "\"")
+    Stance_Positive = paste0("\"", (Tab[4,2]), "\"")
     
     Text = (Crosstabs[which(Crosstabs == Question), 2])
     
@@ -1783,7 +1783,7 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
       if(Group == "Total"){
         Group = Subject
       } else {
-        Group = paste("those who selected", Group)
+        Group = paste("those who selected", paste0("\"", Group, "\""))
       }
       
       Group_Results = Tab[seq(Index + 2, length.out = 3, by = 1+length(Legend))]
@@ -1800,12 +1800,19 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
       End_Opposition = Convert_Percentage(Group_Results[2,2])
       Change_Opposition = Convert_Percentage(Group_Results[2,3])
       
+      if(sum(grepl("%", as.matrix(Group_Results[1])))<4){
+        Beg_Support = Convert_Percentage(Group_Results[3,1])
+        End_Support = Convert_Percentage(Group_Results[3,2])
+        Change_Support = Convert_Percentage(Group_Results[3,3])
+        Stance_Positive = paste0("\"", (Tab[3,2]), "\"")
+      }
+      
       if(!(is.na(Change_Mean) || Change_Mean == "")){
         
         Data = rbind(Data, c(Group_Original, Beg_Support, End_Support))
         
-        if(extract_first_numeric(Change_Mean) != 0){ Line1 = paste("Among", paste0(Group),  paste0("(", SampleSizes[Index], ")", ","), "the mean rating", ReturnText(Change_Mean), "by", add_P_in_parenthesis(Change_Mean))} else {
-          Line1 = paste("Among", paste0(Group,","), "the mean rating did not change")}
+        if(extract_first_numeric(Change_Mean) != 0){ Line1 = paste("Among", paste0(Group),  paste0("(", SampleSizes[Index], ")", ","), "the mean", ReturnText(Change_Mean), "by", add_P_in_parenthesis(Change_Mean))} else {
+          Line1 = paste("Among", paste0(Group,","), "the mean did not change")}
         
         if(Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive) == Stance(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive)){
           Line2 = paste0("After deliberation ", Stance_Percentage(End_Support, End_Opposition, Stance_Negative, Stance_Positive), " among this group, similar to before deliberation.")
@@ -1839,6 +1846,8 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     }
     if(length(Lines) == 0){Lines = "API error. Ensure there is a valid API key for ChatGPT."}
     
+    if(nrow(Data) != 0){
+    
     Data = as.data.frame(Data)
     Names = Data[,1]
     Data=Data[,-1]
@@ -1861,6 +1870,12 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     
     names(Data1)[1] = paste("Selected", Stance_Positive, "(%)")
     names(Data2)[1] = paste("Selected", Stance_Positive, "(%)")
+    
+    if(Stance_Positive == "\"Correct\""){
+      names(Data1)[1] = paste("Answered Correctly", "(%)")
+      names(Data2)[1] = paste("Answered Correctly", "(%)")
+    }
+    
     
     rownames(Data1) = paste(rownames(Data1), "(Before)")
     rownames(Data2) = paste(rownames(Data2), "(After)")
@@ -1895,6 +1910,15 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     
     Description = ""
     
+    # Fix phrasing
+    {
+      Lines = gsub("selected \"incorrect\"", "was incorrect", Lines)
+      Lines = gsub("selected \"correct\"", "was correct", Lines)
+      Lines = gsub("selected \"correct\"", "was correct", Lines)
+      }
+    
+    {
+    
     WordDocument <- suppressWarnings(WordDocument %>% 
       body_add_par(Question, style = "heading 1", pos = "after") %>%
       body_add_par(Lines, pos = "after") %>%
@@ -1905,7 +1929,7 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
       footers_replace_all_text("Details", Description) %>%
       body_add_break())
     
-  }
+    }}}
   
   File_Name = paste0(gsub("Tables", "Report", File_Name), ".docx")
   
