@@ -1876,7 +1876,6 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
       names(Data2)[1] = paste("Answered Correctly", "(%)")
     }
     
-    
     rownames(Data1) = paste(rownames(Data1), "(Before)")
     rownames(Data2) = paste(rownames(Data2), "(After)")
     
