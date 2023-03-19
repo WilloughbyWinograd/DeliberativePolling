@@ -2,10 +2,20 @@
 % Please edit documentation in R/Functions.R
 \name{Ordinal}
 \alias{Ordinal}
-\title{Creates a crosstab in Excel and Word comparing demographics}
+\title{Creates a crosstab in Excel and Word comparing opinions.}
 \usage{
-Ordinal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant)
+Ordinal(
+  Dataset,
+  Template,
+  Outputs,
+  Group1,
+  Group2,
+  Alpha,
+  Only_Significant,
+  Only_Means,
+  API_Key
+)
 }
 \description{
-Creates a crosstab in Excel and Word comparing demographics
+Creates a crosstab in Excel and Word comparing opinions.
 }

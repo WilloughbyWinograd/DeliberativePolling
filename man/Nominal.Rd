@@ -2,20 +2,10 @@
 % Please edit documentation in R/Functions.R
 \name{Nominal}
 \alias{Nominal}
-\title{Creates a crosstab in Excel and Word comparing opinions.}
+\title{Creates a crosstab in Excel and Word comparing demographics}
 \usage{
-Nominal(
-  Dataset,
-  Template,
-  Outputs,
-  Group1,
-  Group2,
-  Alpha,
-  Only_Significant,
-  Only_Means,
-  API_Key
-)
+Nominal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant)
 }
 \description{
-Creates a crosstab in Excel and Word comparing opinions.
+Creates a crosstab in Excel and Word comparing demographics
 }

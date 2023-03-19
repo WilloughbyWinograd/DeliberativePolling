@@ -38,8 +38,8 @@ Results = function(
   }
   if(missing(API)){API = "None"}
   
-  Ordinal(Dataset, Template, Outputs = Exports, Group1 = Group_1, Group2 = Group_2, Alpha, Only_Significant)
-  Nominal(Dataset, Template, Outputs = Exports, Group1 = Group_1, Group2 = Group_2, Alpha, Only_Significant, Only_Means = FALSE, API_Key = API)
+  Nominal(Dataset, Template, Outputs = Exports, Group1 = Group_1, Group2 = Group_2, Alpha, Only_Significant)
+  Ordinal(Dataset, Template, Outputs = Exports, Group1 = Group_1, Group2 = Group_2, Alpha, Only_Significant, Only_Means = FALSE, API_Key = API)
 }
 
 #' Returns list of data frames.
@@ -67,7 +67,7 @@ Format = function(
     Datasets[[Dataset_Number]] = Dataset
   }
   
-  Codebook_Demographics = Codebook[which(Codebook[1,] == "Ordinal")]
+  Codebook_Demographics = Codebook[which(Codebook[1,] == "Nominal")]
   
   for(Name in names(Codebook_Demographics)){
     
@@ -122,7 +122,7 @@ Format = function(
         
         Type = Codebook_Column[1,]
         
-        if(Type == "Ordinal"){
+        if(Type == "Nominal"){
           
           Demographic_Categories = Codebook_Column[-1,]
           
@@ -143,7 +143,7 @@ Format = function(
             colnames(Dataset_Column) = Name
           }
         }
-        if(Type == "Nominal"){
+        if(Type == "Ordinal"){
           
           Scale = Codebook_Column[3,]
           Scale = unlist(strsplit(unlist(Scale), " to ")[])
@@ -181,7 +181,7 @@ Format = function(
 
 
 #' Creates a crosstab in Excel and Word comparing opinions.
-Nominal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant, Only_Means, API_Key){
+Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant, Only_Means, API_Key){
   
   # Adds objects to global environment
   assign("Alpha", Alpha, envir = globalenv())
@@ -208,7 +208,7 @@ Nominal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   # Adds overall column to codebook
   Overall = Codebook[1]
   Overall[] = NA
-  Overall[1,] = "Ordinal"
+  Overall[1,] = "Nominal"
   colnames(Overall) = "Overall"
   Codebook = cbind(Codebook, Overall)
   
@@ -226,8 +226,8 @@ Nominal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   Dataset_Group2 = cbind(Dataset_Group2, Overall)
   
   # Gets the column number of the first and last demographic and questions.
-  Demographics = (which(Codebook[1,] == "Ordinal"))
-  Questions = (which(Codebook[1,] == "Nominal"))
+  Demographics = (which(Codebook[1,] == "Nominal"))
+  Questions = (which(Codebook[1,] == "Ordinal"))
   Demographic_Beg = Demographics[1]
   Demographic_End = Demographics[length(Demographics)]
   Question_Beg = Questions[1]
@@ -914,7 +914,7 @@ Nominal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
     {
       if(Weight1 == Weight2){Weights = Weight1}
       if(Weight1!= Weight2){Weights = paste(Weight1, Weight2, sep = " and ")}
-      File_Name = paste("Tables", "Nominal", Name_Group, Weights, Demographic_Category, sep = " - ")
+      File_Name = paste("Tables", "Ordinal", Name_Group, Weights, Demographic_Category, sep = " - ")
       Document_Title = gsub(" by Overall", "", paste(paste(Name_Group, ", Weighted by ", Weights, sep = ""), Demographic_Category, sep = " by "))
       Document_Title = gsub("Weighted by Unweighted", "Unweighted", Document_Title)
     }
@@ -932,7 +932,7 @@ Nominal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
     
     # Runs a pre-defined function that creates Word documents from the crosstabs.
     {
-      Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Nominal", Demographic_Category, Codebook)
+      Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Ordinal", Demographic_Category, Codebook)
     }
     
     # Adds a legend.
@@ -978,7 +978,7 @@ Nominal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
 }
 
 #' Creates a crosstab in Excel and Word comparing demographics
-Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant){
+Nominal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant){
   
   # Adds objects to global environment
   assign("Alpha", Alpha, envir = globalenv())
@@ -1022,8 +1022,8 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   Dataset_Group2 = cbind(Dataset_Group2, Overall)
   
   # Gets the column number of the first and last demographic and questions.
-  Demographics = (which(Codebook[1,] == "Ordinal"))
-  Questions = (which(Codebook[1,] == "Nominal"))
+  Demographics = (which(Codebook[1,] == "Nominal"))
+  Questions = (which(Codebook[1,] == "Ordinal"))
   Demographic_Beg = Demographics[1]
   Demographic_End = Demographics[length(Demographics)]
   Question_Beg = Questions[1]
@@ -1181,7 +1181,7 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   {
     if(Weight1 == Weight2){Weights = Weight1}
     if(Weight1!= Weight2){Weights = paste(Weight1, Weight2, sep = " and ")}
-    File_Name = paste("Tables", "Ordinal", Name_Group, Weights, sep = " - ")
+    File_Name = paste("Tables", "Nominal", Name_Group, Weights, sep = " - ")
     Document_Title = gsub(" by Overall", "", paste(paste(Name_Group, ", Weighted by ", Weights, sep = "")))
     Document_Title = gsub("Weighted by Unweighted", "Unweighted", Document_Title)
   }
@@ -1193,7 +1193,7 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   
   # Runs a pre-defined function that creates Word documents from the crosstabs.
   {
-    Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Ordinal", Demographic_Category, Codebook)
+    Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Nominal", Demographic_Category, Codebook)
   }
 }
 
@@ -1445,7 +1445,7 @@ Export_Word = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Docu
       ColumnNumbers = ncol(Crosstabs)
       RowNumbers = nrow(Crosstabs)
       
-      if(Type == "Nominal"){
+      if(Type == "Ordinal"){
         
         # Creates a legend.
         Legend = Codebook[-1, match(Demographic_Category, names(Codebook))]
@@ -1583,7 +1583,7 @@ Export_Word = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Docu
         else {print("Cannot export Word version due to large file size or template error.")}
       }
       
-      if(Type == "Ordinal"){
+      if(Type == "Nominal"){
         
         # Gets the column names of the crosstabs
         ColumnNames = Crosstabs[4,]
