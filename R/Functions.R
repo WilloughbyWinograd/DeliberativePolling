@@ -62,7 +62,7 @@ Format = function(
     Dataset = Datasets[[Dataset_Number]]
     OG_Names = names(Dataset)
     names(Dataset) = paste(seq(1,length(OG_Names)), OG_Names)
-    Dataset = Dataset %>% mutate_all(funs(str_replace_all(., paste0("[", paste(c("&", "$", "£", "+"), collapse = ""), "]"), "_")))
+    Dataset = suppressWarnings(Dataset %>% mutate_all(funs(str_replace_all(., paste0("[", paste(c("&", "$", "£", "+"), collapse = ""), "]"), "_"))))
     names(Dataset) = OG_Names
     Datasets[[Dataset_Number]] = Dataset
   }
@@ -1708,7 +1708,7 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     } else if (opposition_percent >= 0.5) {
       return(paste("a majority selected", tolower(Stance_Negative), paste0("(",FormatPercentage(opposition_percent),")")))
     } else {
-      return(paste("there was no majority for", tolower(Stance_Positive), paste0("(",FormatPercentage(support_percent),")"), "or", Stance_Negative, paste0("(",FormatPercentage(opposition_percent),")")))
+      return(paste("there was no majority for", tolower(Stance_Positive), paste0("(",FormatPercentage(support_percent),")"), "or", tolower(Stance_Negative), paste0("(",FormatPercentage(opposition_percent),")")))
     }
   }
   
@@ -1749,7 +1749,7 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
   Legend = Crosstabs[2:(which(Crosstabs[2] == "Prompt and Responses")-6), 2]
   SampleSizes = Crosstabs[(which(Crosstabs[2] == "Prompt and Responses")-2), 3:(2+length(Legend))]
   
-  if(length(Legend) < 6){
+  if(length(Legend) < 7){
   Tabs = Crosstabs[(2+which(Crosstabs[2] == "Prompt and Responses")):nrow(Crosstabs), ]
   
   Questions = unique(Tabs$ID)
