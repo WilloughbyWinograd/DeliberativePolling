@@ -19,7 +19,7 @@ Depends:
 	httr,
 	tools
 Authors@R: 
-    person("Alice", "Siu", email = "asiu@stanford.edu")
+    person("Alice", "Siu", email = "asiu@stanford.edu", role = c("aut"))
 Description: This packages is for formatting and analyzing datasets from Deliberative Polling events. It was developed by researchers at The Deliberative Democracy Lab at Stanford University.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
