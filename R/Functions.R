@@ -1749,7 +1749,7 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
   Legend = Crosstabs[2:(which(Crosstabs[2] == "Prompt and Responses")-6), 2]
   SampleSizes = Crosstabs[(which(Crosstabs[2] == "Prompt and Responses")-2), 3:(2+length(Legend))]
   
-    if(length(Legend) < 7){
+    if(length(Legend) >= 2 && length(Legend) < 7){
       
       all_n_zero <- all(apply(SampleSizes[-1], 1, function(x) all(grepl("n = 0", x))))
       if(!all_n_zero){
