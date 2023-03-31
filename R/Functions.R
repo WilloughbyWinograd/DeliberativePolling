@@ -7,7 +7,7 @@ Results = function(
     Template,
     API,
     Significance
-    ){
+){
   
   #' Returns tables and reports in Microsoft Word and Excel.
   #' 
@@ -32,7 +32,7 @@ Results = function(
   if(missing(Significance)){
     Only_Significant = FALSE
     Alpha = 0.05
-    } else {
+  } else {
     Only_Significant = TRUE
     Alpha = Significance
   }
@@ -46,7 +46,7 @@ Results = function(
 Format = function(
     Codebook,
     Datasets
-    ){
+){
   
   #' Returns list of data frames.
   #' 
@@ -1748,191 +1748,193 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
   
   Legend = Crosstabs[2:(which(Crosstabs[2] == "Prompt and Responses")-6), 2]
   SampleSizes = Crosstabs[(which(Crosstabs[2] == "Prompt and Responses")-2), 3:(2+length(Legend))]
+  all_n_zero <- all(apply(SampleSizes[-1], 1, function(x) all(grepl("n = 0", x))))
   
-  if(length(Legend) < 7){
-  Tabs = Crosstabs[(2+which(Crosstabs[2] == "Prompt and Responses")):nrow(Crosstabs), ]
-  
-  Questions = unique(Tabs$ID)
-  Questions = Questions[nzchar(Questions)]
-  
-  Subject = Group1
-  
-  WordDocument <- suppressWarnings(read_docx(paste0(getwd(), Template)))
-  
-  for(Question in Questions){
-    
-    Tab = Tabs[which(Tabs$ID == Question):(which(Tabs$ID == Question)+4),]
-    
-    Stance_Negative = paste0("\"", (Tab[2,2]), "\"")
-    Stance_Positive = paste0("\"", (Tab[4,2]), "\"")
-    
-    Text = (Crosstabs[which(Crosstabs == Question), 2])
-    
-    Lines = paste0(tools::toTitleCase(Subject), " were asked to respond to the statement, \"", gsub("\\.", "", Text), "\"", ".")
-    Subject = tolower(Subject)
-    
-    # Create the matrix with the specified headings
-    Data <- matrix(ncol=3, nrow=0, dimnames=list(NULL, c("Group", paste("Selected", Stance_Positive, "Before Deliberation"), paste("Selected", Stance_Positive, "After Deliberation"))))
-    
-    for(Group in Legend){
+  if(!all_n_zero){
+    if(length(Legend) < 7){
+      Tabs = Crosstabs[(2+which(Crosstabs[2] == "Prompt and Responses")):nrow(Crosstabs), ]
       
-      Index = which(Legend == Group)
+      Questions = unique(Tabs$ID)
+      Questions = Questions[nzchar(Questions)]
       
-      Group_Original = Group
+      Subject = Group1
       
-      if(Group == "Total"){
-        Group = Subject
-      } else {
-        Group = paste("those who selected", paste0("\"", Group, "\""))
-      }
+      WordDocument <- suppressWarnings(read_docx(paste0(getwd(), Template)))
       
-      Group_Results = Tab[seq(Index + 2, length.out = 3, by = 1+length(Legend))]
-      
-      Beg_Mean = Group_Results[1,1]
-      End_Mean = Group_Results[1,2]
-      Change_Mean = Group_Results[1,3]
-      
-      Beg_Support = Convert_Percentage(Group_Results[4,1])
-      End_Support = Convert_Percentage(Group_Results[4,2])
-      Change_Support = Convert_Percentage(Group_Results[4,3])
-      
-      Beg_Opposition = Convert_Percentage(Group_Results[2,1])
-      End_Opposition = Convert_Percentage(Group_Results[2,2])
-      Change_Opposition = Convert_Percentage(Group_Results[2,3])
-      
-      if(sum(grepl("%", as.matrix(Group_Results[1])))<4){
-        Beg_Support = Convert_Percentage(Group_Results[3,1])
-        End_Support = Convert_Percentage(Group_Results[3,2])
-        Change_Support = Convert_Percentage(Group_Results[3,3])
-        Stance_Positive = paste0("\"", (Tab[3,2]), "\"")
-      }
-      
-      if(!(is.na(Change_Mean) || Change_Mean == "")){
+      for(Question in Questions){
         
-        Data = rbind(Data, c(Group_Original, Beg_Support, End_Support))
+        Tab = Tabs[which(Tabs$ID == Question):(which(Tabs$ID == Question)+4),]
         
-        if(extract_first_numeric(Change_Mean) != 0){ Line1 = paste("Among", paste0(Group),  paste0("(", SampleSizes[Index], ")", ","), "the mean", ReturnText(Change_Mean), "by", add_P_in_parenthesis(Change_Mean))} else {
-          Line1 = paste("Among", paste0(Group,","), "the mean did not change")}
+        Stance_Negative = paste0("\"", (Tab[2,2]), "\"")
+        Stance_Positive = paste0("\"", (Tab[4,2]), "\"")
         
-        if(Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive) == Stance(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive)){
-          Line2 = paste0("After deliberation ", Stance_Percentage(End_Support, End_Opposition, Stance_Negative, Stance_Positive), " among this group, similar to before deliberation.")
-        } else {
-          Line2 = paste0("Before deliberation ", Stance_Percentage(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive), " among this group, while after deliberation ", Stance_Percentage(End_Support, End_Opposition, Stance_Negative, Stance_Positive), ".")
+        Text = (Crosstabs[which(Crosstabs == Question), 2])
+        
+        Lines = paste0(tools::toTitleCase(Subject), " were asked to respond to the statement, \"", gsub("\\.", "", Text), "\"", ".")
+        Subject = tolower(Subject)
+        
+        # Create the matrix with the specified headings
+        Data <- matrix(ncol=3, nrow=0, dimnames=list(NULL, c("Group", paste("Selected", Stance_Positive, "Before Deliberation"), paste("Selected", Stance_Positive, "After Deliberation"))))
+        
+        for(Group in Legend){
+          
+          Index = which(Legend == Group)
+          
+          Group_Original = Group
+          
+          if(Group == "Total"){
+            Group = Subject
+          } else {
+            Group = paste("those who selected", paste0("\"", Group, "\""))
+          }
+          
+          Group_Results = Tab[seq(Index + 2, length.out = 3, by = 1+length(Legend))]
+          
+          Beg_Mean = Group_Results[1,1]
+          End_Mean = Group_Results[1,2]
+          Change_Mean = Group_Results[1,3]
+          
+          Beg_Support = Convert_Percentage(Group_Results[4,1])
+          End_Support = Convert_Percentage(Group_Results[4,2])
+          Change_Support = Convert_Percentage(Group_Results[4,3])
+          
+          Beg_Opposition = Convert_Percentage(Group_Results[2,1])
+          End_Opposition = Convert_Percentage(Group_Results[2,2])
+          Change_Opposition = Convert_Percentage(Group_Results[2,3])
+          
+          if(sum(grepl("%", as.matrix(Group_Results[1])))<4){
+            Beg_Support = Convert_Percentage(Group_Results[3,1])
+            End_Support = Convert_Percentage(Group_Results[3,2])
+            Change_Support = Convert_Percentage(Group_Results[3,3])
+            Stance_Positive = paste0("\"", (Tab[3,2]), "\"")
+          }
+          
+          if(!(is.na(Change_Mean) || Change_Mean == "")){
+            
+            Data = rbind(Data, c(Group_Original, Beg_Support, End_Support))
+            
+            if(extract_first_numeric(Change_Mean) != 0){ Line1 = paste("Among", paste0(Group),  paste0("(", SampleSizes[Index], ")", ","), "the mean", ReturnText(Change_Mean), "by", add_P_in_parenthesis(Change_Mean))} else {
+              Line1 = paste("Among", paste0(Group,","), "the mean did not change")}
+            
+            if(Stance(End_Support, End_Opposition, Stance_Negative, Stance_Positive) == Stance(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive)){
+              Line2 = paste0("After deliberation ", Stance_Percentage(End_Support, End_Opposition, Stance_Negative, Stance_Positive), " among this group, similar to before deliberation.")
+            } else {
+              Line2 = paste0("Before deliberation ", Stance_Percentage(Beg_Support, Beg_Opposition, Stance_Negative, Stance_Positive), " among this group, while after deliberation ", Stance_Percentage(End_Support, End_Opposition, Stance_Negative, Stance_Positive), ".")
+            }
+            
+            Lines = paste(Lines, paste0(Line1, ". ", Line2))
+          }}
+        
+        if(API_Key != "None"){
+          # Calls the ChatGPT API with the given prompt and returns the answer
+          ask_chatgpt <- function(prompt) {
+            response <- POST(
+              url = "https://api.openai.com/v1/chat/completions", 
+              add_headers(Authorization = paste("Bearer", API_Key)),
+              content_type_json(),
+              encode = "json",
+              body = list(
+                model = "gpt-3.5-turbo",
+                messages = list(list(
+                  role = "user", 
+                  content = prompt
+                ))
+              )
+            )
+            str_trim(content(response)$choices[[1]]$message$content)
+          }
+          
+          Lines <- ask_chatgpt(paste("Rephase the following to sound less structured and more human, but do not change the numbers or conclusions. Keep the numbers the same. Don't remove the word deliberation:", Lines))
         }
+        if(length(Lines) == 0){Lines = "API error. Ensure there is a valid API key for ChatGPT."}
         
-        Lines = paste(Lines, paste0(Line1, ". ", Line2))
-      }}
-    
-    if(API_Key != "None"){
-      # Calls the ChatGPT API with the given prompt and returns the answer
-      ask_chatgpt <- function(prompt) {
-        response <- POST(
-          url = "https://api.openai.com/v1/chat/completions", 
-          add_headers(Authorization = paste("Bearer", API_Key)),
-          content_type_json(),
-          encode = "json",
-          body = list(
-            model = "gpt-3.5-turbo",
-            messages = list(list(
-              role = "user", 
-              content = prompt
-            ))
-          )
-        )
-        str_trim(content(response)$choices[[1]]$message$content)
-      }
+        if(nrow(Data) != 0){
+          
+          Data = as.data.frame(Data)
+          Names = Data[,1]
+          Data=Data[,-1]
+          Data = apply(Data, 2, as.numeric)
+          Data = as.data.frame(Data)
+          
+          if(Demographic_Category != "Overall"){
+            rownames(Data) = Names
+          } else {
+            Data = t(Data)
+            rownames(Data) = Names
+          }
+          
+          Data = t(Data)
+          
+          Data <- as.data.frame(t(Data))
+          
+          Data1 = Data[1]
+          Data2 = Data[2]
+          
+          names(Data1)[1] = paste("Selected", Stance_Positive, "(%)")
+          names(Data2)[1] = paste("Selected", Stance_Positive, "(%)")
+          
+          if(Stance_Positive == "\"Correct\""){
+            names(Data1)[1] = paste("Answered Correctly", "(%)")
+            names(Data2)[1] = paste("Answered Correctly", "(%)")
+          }
+          
+          rownames(Data1) = paste(rownames(Data1), "(Before)")
+          rownames(Data2) = paste(rownames(Data2), "(After)")
+          
+          # Interlace the data frames
+          Combined <- rbind(Data1, Data2)
+          
+          Combined = cbind(rownames(Combined), Combined)
+          
+          # Interlace rows based on row index
+          Combined = Combined[rev(order(Combined$`rownames(Combined)`)), ]
+          
+          Data = Combined
+          Data = Data[2]
+          
+          Group = row.names(Data)
+          Data = as.data.frame(cbind(Group, Data))
+          
+          table <- flextable(Data)
+          
+          table = width(table, width = 2)
+          table = width(table, j = 2, width = 4.5)
+          
+          table <- align(table, align = "right", part = "body", j = 1)
+          table <- align(table, align = "left", part = "body", j = 2)
+          table <- align(table, align = "center", part = "header")
+          
+          # Add minibars to the table
+          table <- compose(table, j = 2, value = as_paragraph(minibar(as.vector(unlist(Data[2])), barcol = "black", width = 4.5)))
+          
+          Plot = table
+          
+          Description = ""
+          
+          # Fix phrasing
+          {
+            Lines = gsub("selected \"incorrect\"", "was incorrect", Lines)
+            Lines = gsub("selected \"correct\"", "was correct", Lines)
+            Lines = gsub("selected \"correct\"", "was correct", Lines)
+          }
+          
+          {
+            
+            WordDocument <- suppressWarnings(WordDocument %>% 
+                                               body_add_par(Question, style = "heading 1", pos = "after") %>%
+                                               body_add_par(Lines, pos = "after") %>%
+                                               body_add_par("", pos = "after") %>%
+                                               body_add_flextable(Plot, align = "center") %>%
+                                               headers_replace_all_text("Title", Type) %>%
+                                               headers_replace_all_text("Subtitle", Document_Title) %>%
+                                               footers_replace_all_text("Details", Description) %>%
+                                               body_add_break())
+            
+          }}}
       
-      Lines <- ask_chatgpt(paste("Rephase the following to sound less structured and more human, but do not change the numbers or conclusions. Keep the numbers the same. Don't remove the word deliberation:", Lines))
-    }
-    if(length(Lines) == 0){Lines = "API error. Ensure there is a valid API key for ChatGPT."}
-    
-    if(nrow(Data) != 0){
-    
-    Data = as.data.frame(Data)
-    Names = Data[,1]
-    Data=Data[,-1]
-    Data = apply(Data, 2, as.numeric)
-    Data = as.data.frame(Data)
-    
-    if(Demographic_Category != "Overall"){
-      rownames(Data) = Names
-    } else {
-      Data = t(Data)
-      rownames(Data) = Names
-    }
-    
-    Data = t(Data)
-    
-    Data <- as.data.frame(t(Data))
-    
-    Data1 = Data[1]
-    Data2 = Data[2]
-    
-    names(Data1)[1] = paste("Selected", Stance_Positive, "(%)")
-    names(Data2)[1] = paste("Selected", Stance_Positive, "(%)")
-    
-    if(Stance_Positive == "\"Correct\""){
-      names(Data1)[1] = paste("Answered Correctly", "(%)")
-      names(Data2)[1] = paste("Answered Correctly", "(%)")
-    }
-    
-    rownames(Data1) = paste(rownames(Data1), "(Before)")
-    rownames(Data2) = paste(rownames(Data2), "(After)")
-    
-    # Interlace the data frames
-    Combined <- rbind(Data1, Data2)
-    
-    Combined = cbind(rownames(Combined), Combined)
-    
-    # Interlace rows based on row index
-    Combined = Combined[rev(order(Combined$`rownames(Combined)`)), ]
-    
-    Data = Combined
-    Data = Data[2]
-    
-    Group = row.names(Data)
-    Data = as.data.frame(cbind(Group, Data))
-    
-    table <- flextable(Data)
-    
-    table = width(table, width = 2)
-    table = width(table, j = 2, width = 4.5)
-    
-    table <- align(table, align = "right", part = "body", j = 1)
-    table <- align(table, align = "left", part = "body", j = 2)
-    table <- align(table, align = "center", part = "header")
-    
-    # Add minibars to the table
-    table <- compose(table, j = 2, value = as_paragraph(minibar(as.vector(unlist(Data[2])), barcol = "black", width = 4.5)))
-
-    Plot = table
-    
-    Description = ""
-    
-    # Fix phrasing
-    {
-      Lines = gsub("selected \"incorrect\"", "was incorrect", Lines)
-      Lines = gsub("selected \"correct\"", "was correct", Lines)
-      Lines = gsub("selected \"correct\"", "was correct", Lines)
-      }
-    
-    {
-    
-    WordDocument <- suppressWarnings(WordDocument %>% 
-      body_add_par(Question, style = "heading 1", pos = "after") %>%
-      body_add_par(Lines, pos = "after") %>%
-      body_add_par("", pos = "after") %>%
-      body_add_flextable(Plot, align = "center") %>%
-      headers_replace_all_text("Title", Type) %>%
-      headers_replace_all_text("Subtitle", Document_Title) %>%
-      footers_replace_all_text("Details", Description) %>%
-      body_add_break())
-    
+      File_Name = paste0(gsub("Tables", "Report", File_Name), ".docx")
+      
+      print(WordDocument, target = paste0(getwd(), Outputs, "/", File_Name))
+      print(noquote(paste("Exported:", File_Name)))
+      
     }}}
-  
-  File_Name = paste0(gsub("Tables", "Report", File_Name), ".docx")
-  
-  print(WordDocument, target = paste0(getwd(), Outputs, "/", File_Name))
-  print(noquote(paste("Exported:", File_Name)))
-  
-}}
