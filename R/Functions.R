@@ -1752,7 +1752,7 @@ Export_Report = function(Crosstabs, Outputs, File_Name, Name_Group, Template, Do
     if(length(Legend) >= 2 && length(Legend) < 7){
       
       if(Demographic_Category == "Overall"){
-        all_n_zero = FALSE
+        all_n_zero = FALSE # test
       }
       all_n_zero <- all(apply(SampleSizes[-1], 1, function(x) all(grepl("n = 0", x))))
       if(!all_n_zero){
