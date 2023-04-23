@@ -8,9 +8,9 @@ Returns list of data frames.}
 Format(Codebook, Datasets)
 }
 \arguments{
-\item{Codebook}{is a sheet containing a correctly formatted codebook for the dataset file.}
+\item{Codebook}{is a data frame containing a correctly formatted codebook for the dataset file.}
 
-\item{Datasets}{are the unformatted datasets to be formatted to match the codebook.}
+\item{Datasets}{is a list of unformatted datasets to be formatted to match the codebook.}
 }
 \description{
 This function returns a list of data frames and the codebook formatted for use in the "Results" function.

@@ -2,8 +2,7 @@
 % Please edit documentation in R/Functions.R
 \name{Results}
 \alias{Results}
-\title{Returns tables and reports in Microsoft Word and Excel.
-Returns tables and reports in Microsoft Word and Excel.}
+\title{Returns tables and reports in Microsoft Word and Excel.}
 \usage{
 Results(
   Dataset,
@@ -16,9 +15,9 @@ Results(
 )
 }
 \arguments{
-\item{Dataset}{is the dataset file.}
+\item{Dataset}{is name of the Excel dataset file.}
 
-\item{Exports}{is the optional location of where files should be printed to.}
+\item{Exports}{is optional and the location of where files should be printed to.}
 
 \item{Group_1}{is a vector containing the treatment group "Participants", time "T1", and weighting variable "Weight 1".}
 
