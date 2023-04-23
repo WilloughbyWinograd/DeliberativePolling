@@ -18,8 +18,8 @@ Results = function(
   #' 3. A report on all ordinal data by select nominal data.
   #' This function required a dataset formatted using the "Dataset" function.
   #' 
-  #' @param Dataset is the dataset file.
-  #' @param Exports is the optional location of where files should be printed to.
+  #' @param Dataset is name of the Excel dataset file.
+  #' @param Exports is optional and the location of where files should be printed to.
   #' @param Group_1 is a vector containing the treatment group "Participants", time "T1", and weighting variable "Weight 1".
   #' @param Group_2 is a vector containing the treatment group "Nonparticipants", time "T2", and weighting variable "Weight 2".
   #' @param Template is the Word document that serves as the base from which documents will be printed.
@@ -37,6 +37,8 @@ Results = function(
     Alpha = Significance
   }
   if(missing(API)){API = "None"}
+  if(is.na(Group_1[3])){Group_1 = append(Group_1, "Unweighted")}
+  if(is.na(Group_2[3])){Group_2 = append(Group_2, "Unweighted")}
   
   Nominal(Dataset, Template, Outputs = Exports, Group1 = Group_1, Group2 = Group_2, Alpha, Only_Significant)
   Ordinal(Dataset, Template, Outputs = Exports, Group1 = Group_1, Group2 = Group_2, Alpha, Only_Significant, Only_Means = FALSE, API_Key = API)
@@ -53,8 +55,8 @@ Format = function(
   #' @description
   #' This function returns a list of data frames and the codebook formatted for use in the "Results" function.
   #' 
-  #' @param Codebook is a sheet containing a correctly formatted codebook for the dataset file.
-  #' @param Datasets are the unformatted datasets to be formatted to match the codebook.
+  #' @param Codebook is a data frame containing a correctly formatted codebook for the dataset file.
+  #' @param Datasets is a list of unformatted datasets to be formatted to match the codebook.
   #' 
   #' @export
   
@@ -322,6 +324,10 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       Paired = FALSE
       if(isTRUE(all.equal(Dataset_Group1$`Identification Number`, Dataset_Group2$`Identification Number`))){
         Paired = TRUE
+      }
+      
+      if(Paired){
+        Demographics_Group2 = Demographics_Group1
       }
       
       # Gets the name of the demographic category
