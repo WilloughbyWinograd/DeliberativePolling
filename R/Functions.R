@@ -48,8 +48,6 @@ Format = function(
     Datasets
 ){
   
-  #' Returns list of data frames.
-  #' 
   #' @description
   #' This function returns a list of data frames and the codebook formatted for use in the "Results" function.
   #' 
