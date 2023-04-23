@@ -9,8 +9,6 @@ Results = function(
     Significance
 ){
   
-  #' Returns tables and reports in Microsoft Word and Excel.
-  #' 
   #' @description
   #' This function returns three types of outputs.
   #' 1. Tables on all nominal data.
@@ -102,6 +100,7 @@ Format = function(
           Unique_Entries = as.character(Unique_Entries[order(Unique_Entries)])
           
           Codebook[2:(length(Unique_Entries)+1), which(names(Codebook) == Name)] = Unique_Entries
+          Codebook[(length(Unique_Entries)+2):(length(Unique_Entries)+20), which(names(Codebook) == Name)] = NA
           
         }}}
   }
