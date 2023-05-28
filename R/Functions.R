@@ -212,7 +212,7 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   Codebook = cbind(Codebook, Overall)
   
   # Organizes the codebook by column value type (opinions, demographics, etc.)
-  Codebook = suppressWarnings(Codebook[,order(Codebook[1,])])
+  Codebook = Codebook[, names(Codebook)[order(t(Codebook[1,]))]]
   
   # Adds overall column to group data
   Overall = Dataset_Group1[1]
@@ -1012,7 +1012,7 @@ Nominal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   Codebook = cbind(Codebook, Overall)
   
   # Organizes the codebook by column value type (opinions, demographics, etc.)
-  Codebook = suppressWarnings(Codebook[,order(Codebook[1,])])
+  Codebook = Codebook[, names(Codebook)[order(t(Codebook[1,]))]]
   
   # Adds overall column to group data
   Overall = Dataset_Group1[1]
