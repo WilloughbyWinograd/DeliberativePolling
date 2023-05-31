@@ -62,7 +62,18 @@ Format = function(
     names(Dataset) = paste(seq(1,length(OG_Names)), OG_Names)
     Dataset = suppressWarnings(Dataset %>% mutate_all(funs(str_replace_all(., paste0("[", paste(c("&", "$", "£", "+"), collapse = ""), "]"), "_"))))
     names(Dataset) = OG_Names
+    Dataset = as_tibble(Dataset)
     Datasets[[Dataset_Number]] = Dataset
+    
+    if(!("Identification Number" %in% colnames(Dataset))){
+      stop("Datasets must contain a column titled 'Identification Number.'")
+    }
+  }
+  
+  Codebook = as_tibble(Codebook)
+  
+  if(!("Identification Number" %in% colnames(Codebook))){
+    stop("Codebook must contain a column titled 'Identification Number.'")
   }
   
   Codebook_Demographics = Codebook[which(Codebook[1,] == "Nominal")]
@@ -1288,10 +1299,7 @@ Responses_to_Text = function(Responses, ColumnName, Codebook){
     Responses[Responses>66] = Response_Positive
     Responses[Responses < 67 & Responses > 33] = Response_Neutral
     Responses[Responses<33] = Response_Negative
-  }
-  
-  # Condenses the 0-10 scale.
-  if(Scale == "0 to 10"){
+  } else if(Scale == "0 to 10"){
     
     # Ensures there are no responses outside of the scale.
     if(suppressWarnings((max(na.omit(Responses)))>10)|suppressWarnings(min(na.omit(Responses)))<0){stop(paste("There is a response outside of the", Scale, "scale specified in the codebook for", ColumnName, sep = " "))}
@@ -1300,10 +1308,7 @@ Responses_to_Text = function(Responses, ColumnName, Codebook){
     Responses[Responses>5] = Response_Positive
     Responses[Responses == 5] = Response_Neutral
     Responses[Responses<5] = Response_Negative
-  }
-  
-  # Condenses the 1-5 scale.
-  if(Scale == "1 to 5"){
+  } else if(Scale == "1 to 5"){
     
     # Ensures there are no responses outside of the scale.
     if(suppressWarnings((max(na.omit(Responses)))>5)|suppressWarnings(min(na.omit(Responses)))<1){stop(paste("There is a response outside of the", Scale, "scale specified in the codebook for", ColumnName, sep = " "))}
@@ -1312,10 +1317,7 @@ Responses_to_Text = function(Responses, ColumnName, Codebook){
     Responses[Responses>3] = Response_Positive
     Responses[Responses == 3] = Response_Neutral
     Responses[Responses<3] = Response_Negative
-  }
-  
-  # Condenses the 1-3 scale.
-  if(Scale == "1 to 3"){
+  } else if(Scale == "1 to 3"){
     
     # Ensures there are no responses outside of the scale.
     if(suppressWarnings((max(na.omit(Responses)))>3)|suppressWarnings(min(na.omit(Responses)))<1){stop(paste("There is a response outside of the", Scale, "scale specified in the codebook for", ColumnName, sep = " "))}
@@ -1324,10 +1326,7 @@ Responses_to_Text = function(Responses, ColumnName, Codebook){
     Responses[Responses == 1] = Response_Negative
     Responses[Responses == 2] = Response_Neutral
     Responses[Responses == 3] = Response_Positive
-  }
-  
-  # Condenses the 0-1 scale.
-  if(Scale == "0 to 1"){
+  } else if(Scale == "0 to 1"){
     
     # Ensures there are no responses outside of the scale.
     if(suppressWarnings((max(na.omit(Responses)))>1)|suppressWarnings(min(na.omit(Responses)))<0){stop(paste("There is a response outside of the", Scale, "scale specified in the codebook for", ColumnName, sep = " "))}
@@ -1335,6 +1334,8 @@ Responses_to_Text = function(Responses, ColumnName, Codebook){
     # Replaces the numeric responses with text responses.
     Responses[Responses == 1] = Response_Positive
     Responses[Responses == 0] = Response_Negative
+  } else {
+    stop(print(paste(Scale, "not recognized. Please pick a recognized scale such as 0 to 100, 0 to 10, 1 to 5, 1 to 3, or 0 to 1.")))
   }
   
   # Returns the formatted responses.
