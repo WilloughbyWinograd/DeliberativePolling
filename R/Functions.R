@@ -66,14 +66,14 @@ Format = function(
     Datasets[[Dataset_Number]] = Dataset
     
     if(!("Identification Number" %in% colnames(Dataset))){
-      stop("Datasets must contain a column titled 'Identification Number.'")
+      stop("Datasets must contain a column titled 'Identification Number'.")
     }
   }
   
   Codebook = as_tibble(Codebook)
   
   if(!("Identification Number" %in% colnames(Codebook))){
-    stop("Codebook must contain a column titled 'Identification Number.'")
+    stop("Codebook must contain a column titled 'Identification Number'.")
   }
   
   Codebook_Demographics = Codebook[which(Codebook[1,] == "Nominal")]
@@ -1335,7 +1335,7 @@ Responses_to_Text = function(Responses, ColumnName, Codebook){
     Responses[Responses == 1] = Response_Positive
     Responses[Responses == 0] = Response_Negative
   } else {
-    stop(print(paste(Scale, "not recognized. Please pick a recognized scale such as 0 to 100, 0 to 10, 1 to 5, 1 to 3, or 0 to 1.")))
+    stop(paste("Scale", Scale, "for", ColumnName, "not recognized. Please pick a pre-defined scale such as 0 to 100, 0 to 10, 1 to 5, 1 to 3, or 0 to 1."))
   }
   
   # Returns the formatted responses.
