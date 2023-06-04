@@ -215,6 +215,10 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   Weight1 = (List_Datasets_Names[[11]])
   Weight2 = (List_Datasets_Names[[12]])
   
+  # Order datasets
+  Dataset_Group1 = Dataset_Group1[order(Dataset_Group1$`Identification Number`)]
+  Dataset_Group2 = Dataset_Group2[order(Dataset_Group2$`Identification Number`)]
+  
   # Adds overall column to codebook
   Overall = Codebook[1]
   Overall[] = NA
@@ -336,6 +340,8 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       
       if(Paired){
         Demographics_Group2 = Demographics_Group1
+        if(sum(Demographics_Group1)==0){stop(paste("No demographic data in", ColumnNumber_Demographics_Group1, Name_Group1))}
+        if(sum(Demographics_Group2)==0){stop(paste("No demographic data in", ColumnNumber_Demographics_Group2, Name_Group2))}
       }
       
       # Gets the name of the demographic category
