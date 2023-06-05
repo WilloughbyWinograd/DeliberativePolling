@@ -216,8 +216,8 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   Weight2 = (List_Datasets_Names[[12]])
   
   # Order datasets
-  Dataset_Group1 = Dataset_Group1[order(Dataset_Group1$`Identification Number`)]
-  Dataset_Group2 = Dataset_Group2[order(Dataset_Group2$`Identification Number`)]
+  Dataset_Group1 = Dataset_Group1[,order(Dataset_Group1$`Identification Number`)]
+  Dataset_Group2 = Dataset_Group2[,order(Dataset_Group2$`Identification Number`)]
   
   # Adds overall column to codebook
   Overall = Codebook[1]
