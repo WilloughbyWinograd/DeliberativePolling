@@ -340,8 +340,8 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       
       if(Paired){
         Demographics_Group2 = Demographics_Group1
-        if(sum(Demographics_Group1)==0){stop(paste("No demographic data in", ColumnNumber_Demographics_Group1, Name_Group1))}
-        if(sum(Demographics_Group2)==0){stop(paste("No demographic data in", ColumnNumber_Demographics_Group2, Name_Group2))}
+        if(is.na(Demographics_Group1)){stop(paste("No demographic data in", ColumnNumber_Demographics_Group1, Name_Group1))}
+        if(is.na(Demographics_Group2)){stop(paste("No demographic data in", ColumnNumber_Demographics_Group2, Name_Group2))}
       }
         
       # Gets the name of the demographic category
