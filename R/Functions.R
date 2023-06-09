@@ -344,11 +344,6 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
         
       # Gets the name of the demographic category
       Demographic_Category = colnames(Demographics_Group1)
-        
-        #if(!Paired){if(!(Demographic_Category == "Overall")){
-        #if(all(is.na(Demographics_Group1))){stop(paste("No demographic data in", ColumnNumber_Demographics_Group1, Name_Group1))}
-        #if(all(is.na(Demographics_Group2))){stop(paste("No demographic data in", ColumnNumber_Demographics_Group2, Name_Group2))}
-      #}}
       
       # Gets the levels for the given question.
       Levels_Responses = unlist(Codebook[4:6,which(names(Codebook) == colnames(Responses_Group1))])
@@ -992,9 +987,9 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
     
     # Runs a pre-defined function that creates a report from the crosstabs.
     {
-      if(Group1 == Group2){
+      if((!all(is.na(Demographics_Group1)) & !all(is.na(Demographics_Group2)))){if(Paired){
         Export_Report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Report", Demographic_Category, API_Key, Group1)
-      }
+      }}
     }
     
   }
