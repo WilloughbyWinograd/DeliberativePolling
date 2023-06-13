@@ -62,7 +62,7 @@ Format = function(
     names(Dataset) = paste(seq(1,length(OG_Names)), OG_Names)
     Dataset = suppressWarnings(Dataset %>% mutate_all(funs(str_replace_all(., paste0("[", paste(c("&", "$", "£", "+"), collapse = ""), "]"), "_"))))
     names(Dataset) = OG_Names
-    make.unique(colnames(Dataset))
+    colnames(Dataset) = make.unique(colnames(Dataset))
     Dataset = as_tibble(Dataset)
     Datasets[[Dataset_Number]] = Dataset
     
@@ -71,7 +71,7 @@ Format = function(
     }
   }
   
-  make.unique(colnames(Codebook))
+  colnames(Codebook) = make.unique(colnames(Codebook))
   Codebook = as_tibble(Codebook)
   
   if(!("Identification Number" %in% colnames(Codebook))){
