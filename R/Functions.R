@@ -145,12 +145,14 @@ Format = function(
             Category_Text = Demographic_Categories[Category_Number,][[1]]
             
             Category_Number = as.character(Category_Number)
+
+            if(length(unlist(Dataset_Column))!=0){
             
             Dataset_Column = stack(as_tibble(lapply(unlist(Dataset_Column), function(x)
               if(isTRUE(nchar(x[1])==nchar(Category_Text))){
                 gsub(Category_Text, Category_Number, x)
               }
-              else {x})))[1]
+              else {x})))[1]}
             
             colnames(Dataset_Column) = Name
           }
