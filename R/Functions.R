@@ -989,9 +989,8 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
     {
       if((!all(is.na(Demographics_Group1)) & !all(is.na(Demographics_Group2)))){if(Paired){
         Export_Report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Report", Demographic_Category, API_Key, Group1)
-      }}
+      }
     }
-    
   }
 }
 
