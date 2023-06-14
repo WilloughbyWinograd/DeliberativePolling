@@ -1,6 +1,6 @@
 Package: DeliberativePolling
 Title: Data Tools for Deliberative Polls
-Version: 1.0.7
+Version: 1.0.8
 Depends:
 	openxlsx,
 	devtools,
