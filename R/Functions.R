@@ -434,8 +434,8 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       Totals_Group1 = 100*prop.table(svytable(~addNA(factor(Responses_Group1, ordered = T, levels = Levels_Responses))+factor(Total_Column_Group1), svydesign(ids = ~1, data = as.data.frame(cbind(addNA(factor(Responses_Group1, ordered = T, levels = Levels_Responses)), factor(Total_Column_Group1), Weight_Group1)), weights = ~Weight_Group1)), 2)
       Totals_Group2 = 100*prop.table(svytable(~addNA(factor(Responses_Group2, ordered = T, levels = Levels_Responses))+factor(Total_Column_Group2), svydesign(ids = ~1, data = as.data.frame(cbind(addNA(factor(Responses_Group2, ordered = T, levels = Levels_Responses)), factor(Total_Column_Group2), Weight_Group2)), weights = ~Weight_Group2)), 2)
 
-        if(is.na(Totals_Group1[nrow(Totals_Group1)] == 100)){break}
-      if(is.na(Totals_Group2[nrow(Totals_Group2)] == 100)){break}
+    if(exists("Totals_Group1")){if(is.na(Totals_Group1[nrow(Totals_Group1)] == 100)){break}}
+    if(exists("Totals_Group2")){if(is.na(Totals_Group2[nrow(Totals_Group2)] == 100)){break}}
         
       # If all responses are NA, then the crosstab is blanked
       if(Totals_Group1[nrow(Totals_Group1)] == 100){Totals_Group1[] = NA}
@@ -848,8 +848,8 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       Crosstabs = rbind(Crosstabs, Spacer, Crosstab)
     }
 
-      if(is.na(Totals_Group1[nrow(Totals_Group1)] == 100)){break}
-      if(is.na(Totals_Group2[nrow(Totals_Group2)] == 100)){break}
+    if(exists("Totals_Group1")){if(is.na(Totals_Group1[nrow(Totals_Group1)] == 100)){break}}
+    if(exists("Totals_Group2")){if(is.na(Totals_Group2[nrow(Totals_Group2)] == 100)){break}}
     
     # Adds crosstab headers to dataframe.
     {
