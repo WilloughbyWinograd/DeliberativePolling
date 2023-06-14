@@ -323,6 +323,8 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
         # Gets the weight
         Weight_Group2 = as.matrix(Dataset_Group2[(which(names(Dataset_Group2) == Weight2))])
       }
+
+        if(!(all(Weight_Group1 == 0) || all(Weight_Group2 == 0))){break}
       
       # Gets the column number of Group 2.
       ColumnNumber_Responses_Group2 = (which(names(Dataset_Group2) == colnames(Codebook[QuestionsCounter])))
