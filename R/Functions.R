@@ -436,12 +436,12 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
 
         Break_Indicator = FALSE
     if(exists("Totals_Group1")){if(is.na(Totals_Group1[nrow(Totals_Group1)] == 100)){
-        break
         Break_Indicator = TRUE
+        break
     }}
     if(exists("Totals_Group2")){if(is.na(Totals_Group2[nrow(Totals_Group2)] == 100)){
-        break
         Break_Indicator = TRUE
+        break
     }}
         
       # If all responses are NA, then the crosstab is blanked
