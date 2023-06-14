@@ -3,6 +3,8 @@ Title: Data Tools for Deliberative Polls
 Version: 1.0.3
 Depends:
 	openxlsx,
+	devtools,
+	haven,
 	dplyr,
 	officer,
 	magrittr,
