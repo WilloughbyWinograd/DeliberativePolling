@@ -305,6 +305,9 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       }
       if(Weight1!= "Unweighted"){
         
+        # Check to see if the weights exist
+        Input_Test(Dataset_Group1, Weight1)
+        
         # Gets the weight
         Weight_Group1 = as.matrix(Dataset_Group1[(which(names(Dataset_Group1) == Weight1))])
       }
@@ -314,11 +317,14 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       }
       if(Weight2!= "Unweighted"){
         
+        # Check to see if the weights exist
+        Input_Test(Dataset_Group2, Weight2)
+        
         # Gets the weight
         Weight_Group2 = as.matrix(Dataset_Group2[(which(names(Dataset_Group2) == Weight2))])
       }
 
-    if((all(Weight_Group1 == 0) || all(Weight_Group2 == 0))){
+        if((all(Weight_Group1 == 0) || all(Weight_Group2 == 0))){break}
       
       # Gets the column number of Group 2.
       ColumnNumber_Responses_Group2 = (which(names(Dataset_Group2) == colnames(Codebook[QuestionsCounter])))
@@ -989,8 +995,9 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
     {
       if((!all(is.na(Demographics_Group1)) & !all(is.na(Demographics_Group2)))){if(Paired){
         Export_Report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Report", Demographic_Category, API_Key, Group1)
-      }
+      }}
     }
+    
   }
 }
 
@@ -1266,6 +1273,17 @@ Dataset_Import = function(File, GroupDetails1, GroupDetails2){
   
   # Returns a list of the dataframes and names.
   return(list(Codebook, Dataset_Group1, Dataset_Group2, Name_Group1, Name_Group2, Name_Group, Group1, Group2, Time1, Time2, Weight1, Weight2))
+}
+
+#' Tests column presence in dataset.
+Input_Test = function(Dataset, Name){
+  
+  # Check to see if the named column exists in the dataset
+  if(isFALSE(any(names(Dataset) == Name))){
+    
+    # If the column does not exist in the dataset, returns an error
+    stop(paste("There is no data named ", Name, ".", sep = ""))
+  }
 }
 
 #' Converts numeric responses to text responses.
