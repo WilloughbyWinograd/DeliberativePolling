@@ -323,8 +323,6 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
         # Gets the weight
         Weight_Group2 = as.matrix(Dataset_Group2[(which(names(Dataset_Group2) == Weight2))])
       }
-
-        if((all(Weight_Group1 == 0) || all(Weight_Group2 == 0))){break}
       
       # Gets the column number of Group 2.
       ColumnNumber_Responses_Group2 = (which(names(Dataset_Group2) == colnames(Codebook[QuestionsCounter])))
@@ -435,7 +433,10 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       # Generates crosstabs if there are responses
       Totals_Group1 = 100*prop.table(svytable(~addNA(factor(Responses_Group1, ordered = T, levels = Levels_Responses))+factor(Total_Column_Group1), svydesign(ids = ~1, data = as.data.frame(cbind(addNA(factor(Responses_Group1, ordered = T, levels = Levels_Responses)), factor(Total_Column_Group1), Weight_Group1)), weights = ~Weight_Group1)), 2)
       Totals_Group2 = 100*prop.table(svytable(~addNA(factor(Responses_Group2, ordered = T, levels = Levels_Responses))+factor(Total_Column_Group2), svydesign(ids = ~1, data = as.data.frame(cbind(addNA(factor(Responses_Group2, ordered = T, levels = Levels_Responses)), factor(Total_Column_Group2), Weight_Group2)), weights = ~Weight_Group2)), 2)
-      
+
+if(tryCatch(Totals_Group1[nrow(Totals_Group1)] == 100, error = function(e) TRUE)){break}
+            if(tryCatch(Totals_Group2[nrow(Totals_Group2)] == 100, error = function(e) TRUE)){break}
+        
       # If all responses are NA, then the crosstab is blanked
       if(Totals_Group1[nrow(Totals_Group1)] == 100){Totals_Group1[] = NA}
       if(Totals_Group2[nrow(Totals_Group2)] == 100){Totals_Group2[] = NA}
