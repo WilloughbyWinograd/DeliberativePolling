@@ -218,6 +218,8 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   Time2 = (List_Datasets_Names[[10]])
   Weight1 = (List_Datasets_Names[[11]])
   Weight2 = (List_Datasets_Names[[12]])
+
+    if (!(all(Weight1 == 0) || all(Weight2 == 0))) {
   
   # Order datasets
   Dataset_Group1 = Dataset_Group1[order(Dataset_Group1$`Identification Number`),]
@@ -994,7 +996,7 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       if((!all(is.na(Demographics_Group1)) & !all(is.na(Demographics_Group2)))){if(Paired){
         Export_Report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type = "Report", Demographic_Category, API_Key, Group1)
       }}
-    }
+    }}
     
   }
 }
