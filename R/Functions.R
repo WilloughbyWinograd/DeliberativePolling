@@ -847,6 +847,9 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
       # Combines crosstabs to one dataframe.
       Crosstabs = rbind(Crosstabs, Spacer, Crosstab)
     }
+
+      if(is.na(Totals_Group1[nrow(Totals_Group1)] == 100)){break}
+      if(is.na(Totals_Group2[nrow(Totals_Group2)] == 100)){break}
     
     # Adds crosstab headers to dataframe.
     {
