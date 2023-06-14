@@ -218,8 +218,6 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
   Time2 = (List_Datasets_Names[[10]])
   Weight1 = (List_Datasets_Names[[11]])
   Weight2 = (List_Datasets_Names[[12]])
-
-    if (!(all(Weight1 == 0) || all(Weight2 == 0))) {
   
   # Order datasets
   Dataset_Group1 = Dataset_Group1[order(Dataset_Group1$`Identification Number`),]
@@ -325,6 +323,10 @@ Ordinal = function(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Signi
         # Gets the weight
         Weight_Group2 = as.matrix(Dataset_Group2[(which(names(Dataset_Group2) == Weight2))])
       }
+
+        
+
+if(!(all(Weight_Group1 == 0) || all(Weight_Group2 == 0))){
       
       # Gets the column number of Group 2.
       ColumnNumber_Responses_Group2 = (which(names(Dataset_Group2) == colnames(Codebook[QuestionsCounter])))
