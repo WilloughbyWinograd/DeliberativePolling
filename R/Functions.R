@@ -1346,6 +1346,16 @@ Responses_to_Text = function(Responses, ColumnName, Codebook){
     Responses[Responses == 1] = Response_Negative
     Responses[Responses == 2] = Response_Neutral
     Responses[Responses == 3] = Response_Positive
+  } else if(Scale == "1 to 4"){
+    
+    # Ensures there are no responses outside of the scale.
+    if(suppressWarnings((max(na.omit(Responses)))>4)|suppressWarnings(min(na.omit(Responses)))<1){stop(paste("There is a response outside of the", Scale, "scale specified in the codebook for", ColumnName, sep = " "))}
+    
+    # Replaces the numeric responses with text responses.
+    Responses[Responses == 1] = Response_Negative
+    Responses[Responses == 2] = Response_Negative
+    Responses[Responses == 3] = Response_Positive
+    Responses[Responses == 4] = Response_Positive
   } else if(Scale == "0 to 1"){
     
     # Ensures there are no responses outside of the scale.
