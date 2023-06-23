@@ -1380,11 +1380,11 @@ Test_T = function(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired){
   Group2 = unlist(Group2)
   Weight1 = unlist(Weight1)
   Weight2 = unlist(Weight2)
-
-    print(Group1)
-    print(Group2)
-    print(Weight1)
-    print(Weight2)
+    
+     assign("Group1", Group1, envir = .GlobalEnv)
+     assign("Group2", Group2, envir = .GlobalEnv)
+     assign("Weight1", Weight1, envir = .GlobalEnv)
+     assign("Weight2", Weight2, envir = .GlobalEnv)
     
   # Performs a t-test if possible
   Test_Validator = (((length(na.exclude(Group1))>4)&(length(na.exclude(Group2))>4)))
