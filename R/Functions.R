@@ -1,5 +1,5 @@
 #' Returns tables and reports in Microsoft Word and Excel.
-Results = function(
+Results = function(a
     Dataset,
     Exports,
     Group_1 = c(Treatment, Time, Weight),
@@ -1380,7 +1380,12 @@ Test_T = function(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired){
   Group2 = unlist(Group2)
   Weight1 = unlist(Weight1)
   Weight2 = unlist(Weight2)
-  
+
+    print(Group1)
+    print(Group2)
+    print(Weight1)
+    print(Weight2)
+    
   # Performs a t-test if possible
   Test_Validator = (((length(na.exclude(Group1))>4)&(length(na.exclude(Group2))>4)))
   
