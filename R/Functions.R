@@ -1,5 +1,5 @@
 #' Returns tables and reports in Microsoft Word and Excel.
-Results = function(a
+Results = function(
     Dataset,
     Exports,
     Group_1 = c(Treatment, Time, Weight),
