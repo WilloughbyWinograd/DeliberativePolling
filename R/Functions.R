@@ -1384,7 +1384,7 @@ Test_T = function(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired){
   # Performs a t-test if possible
   Test_Validator = (((length(na.exclude(Group1))>4)&(length(na.exclude(Group2))>4)))
     if(Test_Validator){
-        if(sum(complete.cases(cbind(Group1, Group2)))<3){Test_Validator = FALSE}
+        if(Paired){if(sum(complete.cases(cbind(Group1, Group2)))<3){Test_Validator = FALSE}}
     }
   
   if(Test_Validator){
