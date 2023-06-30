@@ -1340,7 +1340,7 @@ Responses_to_Text = function(Responses, ColumnName, Codebook){
   } else if(Scale == "Difference"){
     
     # Ensures there are no responses outside of the scale.
-    if(suppressWarnings((max(na.omit(Responses)))>5)|suppressWarnings(min(na.omit(Responses)))<1){stop(paste("There is a response outside of the", Scale, "scale specified in the codebook for", ColumnName, sep = " "))}
+    if(suppressWarnings((max(na.omit(Responses)))>10)|suppressWarnings(min(na.omit(Responses)))<-10){stop(paste("There is a response outside of the", Scale, "scale specified in the codebook for", ColumnName, sep = " "))}
     
     # Replaces the numeric responses with text responses.
     Responses[Responses>0] = Response_Positive
