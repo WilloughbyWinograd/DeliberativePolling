@@ -1,0 +1,79 @@
+// Place your key bindings in this file to override the defaultsauto[]
+[
+    {
+        "key": "cmd+enter",
+        "command": "python.datascience.execSelectionInteractive",
+        "when": "editorTextFocus && python.datascience.featureenabled && python.datascience.ownsSelection && !findInputFocussed && !notebookEditorFocused && !replaceInputFocussed && editorLangId == 'python'"
+    },
+    {
+        "key": "shift+enter",
+        "command": "-python.datascience.execSelectionInteractive",
+        "when": "editorTextFocus && python.datascience.featureenabled && python.datascience.ownsSelection && !findInputFocussed && !notebookEditorFocused && !replaceInputFocussed && editorLangId == 'python'"
+    },
+    {
+        "key": "cmd+enter",
+        "command": "python.datascience.runcurrentcell",
+        "when": "editorTextFocus && python.datascience.featureenabled && python.datascience.hascodecells && !editorHasSelection && !notebookEditorFocused"
+    },
+    {
+        "key": "ctrl+enter",
+        "command": "-python.datascience.runcurrentcell",
+        "when": "editorTextFocus && python.datascience.featureenabled && python.datascience.hascodecells && !editorHasSelection && !notebookEditorFocused"
+    },    
+    {
+        "key": "cmd+enter",
+        "command": "notebook.cell.executeAndSelectBelow",
+        "when": "notebookEditorFocused && activeEditor == 'workbench.editor.notebook'"
+    },
+    {
+        "key": "shift+enter",
+        "command": "-notebook.cell.executeAndSelectBelow",
+        "when": "notebookEditorFocused && activeEditor == 'workbench.editor.notebook'"
+    },    
+    {
+        "key": "ctrl+l",
+        "command": "python.datascience.removeallcells",
+        "when": "python.datascience.featureenabled && !terminalFocus"
+    },
+    {
+        "key": "ctrl+l",
+        "command": "workbench.action.terminal.clear",
+        "when": "terminalFocus"
+    },    
+    {
+        "key": "cmd+shift+f10",
+        "command": "python.datascience.restartkernel"
+    },
+    {
+        "key": "cmd+shift+c",
+        "command": "editor.action.commentLine",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+    {
+        "key": "cmd+/",
+        "command": "-editor.action.commentLine",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+    {
+        "key": "cmd+i",
+        "command": "python.datascience.showhistorypane"
+    },
+    {
+        "key": "ctrl+shift+/",
+        "command": "rewrap.rewrapComment",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "alt+q",
+        "command": "-rewrap.rewrapComment",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+shift+s",
+        "command": "extension.updateSettings"
+    },
+    {
+        "key": "shift+alt+u",
+        "command": "-extension.updateSettings"
+    }
+]
