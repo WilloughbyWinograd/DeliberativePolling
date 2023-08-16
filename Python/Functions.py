@@ -1,3 +1,33 @@
+import pandas as pd
+
+dataset = pd.read_excel("Python/Dataset.xlsx")
+
+results(dataset="/Inputs/Dataset.xlsx",
+        group_1=["Treatment", "T1", "weight_a"],
+        group_2=["Control", "T2", "weight_a"],
+        template="Template.docx" )
+
+excel_comparison = pd.read_excel("Python/(Original) Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
+excel_new = pd.read_excel("Python/(Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
+
+# Check if both dataframes are of the same shape
+if excel_comparison.shape != excel_new.shape:
+    print("Dataframes are of different shapes!")
+else:
+    # Compare the two dataframes and get a boolean dataframe
+    df_diff = excel_comparison.eq(excel_new)
+
+    # Find where the dataframes are not equal
+    rows, cols = np.where(df_diff == False)
+    
+    for row, col in zip(rows, cols):
+        print(f"Difference at Row {row+1}, Column {col+1}")
+        print(f"Original: {excel_comparison.iloc[row, col]}")
+        print(f"New: {excel_new.iloc[row, col]}")
+        print("-" * 40)
+
+######## Above is for testing ########
+
 import numpy as np
 from scipy.stats import chi2_contingency
 
@@ -146,7 +176,6 @@ def Test_Chi_Squared(ValuetoMark, Group1, Group2):
             ValuetoMark = f"{ValuetoMark} [Warning: P-value may be incorrect, as at least one expected value is less than 5.]"
 
     return ValuetoMark
-import pandas as pd
 
 def Export_Excel(Crosstabs, Outputs, File_Name, Name_Group):
     # Gets the file name.
