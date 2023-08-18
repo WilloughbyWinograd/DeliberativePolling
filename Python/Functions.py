@@ -60,6 +60,14 @@ def Test_Chi_Squared(ValuetoMark, Group1, Group2):
 
 import numpy as np
 
+
+def Input_Test(dataset, name):
+    # Check to see if the named column exists in the dataset
+    if name not in dataset.columns:
+        # If the column does not exist in the dataset, raise an error
+        raise ValueError(f"There is no data named {name}.")
+
+
 def Responses_to_Text(Responses, ColumnName, Codebook):
     # Converts column name to string.
     ColumnName = str(ColumnName)
@@ -1053,8 +1061,5 @@ Crosstabs = Crosstabs.applymap(
 # Runs a pre-defined function that creates Word documents from the crosstabs
 Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type="Ordinal", Demographic_Category,
             Codebook)
-
-
-
 
 
