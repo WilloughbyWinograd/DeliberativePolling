@@ -1063,3 +1063,188 @@ Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title,
             Codebook)
 
 
+
+import numpy as np
+from scipy import stats
+
+def Test_T(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired, Only_Significant=False, Alpha=0.05):
+    # Unlists data
+    Group1 = np.array(Group1).flatten()
+    Group2 = np.array(Group2).flatten()
+    Weight1 = np.array(Weight1).flatten()
+    Weight2 = np.array(Weight2).flatten()
+    
+    # Performs a t-test if possible
+    Test_Validator = (len(Group1[~np.isnan(Group1)]) > 4) and (len(Group2[~np.isnan(Group2)]) > 4)
+    if Test_Validator:
+        if Paired:
+            if np.sum(np.isfinite(np.column_stack((Group1, Group2)))) < 3:
+                Test_Validator = False
+    
+    if Test_Validator:
+        if Paired:
+            # Gets the p-value from the t-test.
+            _, _, PValue = stats.ttest_rel(Group2 - Group1, weights=Weight1)
+        else:
+            # Gets the p-value from the t-test.
+            _, PValue = stats.ttest_ind(Group1, Group2, weights=(Weight1, Weight2), alternative='two-sided')
+        
+        if not np.isnan(PValue):
+            # If specified, always adds p-values.
+            if not Only_Significant:
+                # Adds p-values
+                ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
+            
+            # If specified, only adds p-values less than or equal to alpha specified.
+            if Only_Significant and PValue <= Alpha:
+                # Adds p-values
+                ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
+    
+    return ValuetoMark
+
+
+
+import pandas as pd
+
+def Dataset_Import(File, GroupDetails1, GroupDetails2):
+    Group1, Time1, Weight1 = GroupDetails1
+    Group2, Time2, Weight2 = GroupDetails2
+    
+    File = f"./{File}"
+    
+    try:
+        excel_sheets = pd.ExcelFile(File).sheet_names
+    except Exception as e:
+        raise Exception("Error reading Excel file:", e)
+    
+    if "Codebook" not in excel_sheets:
+        raise Exception("No codebook found. Ensure there is a sheet named 'Codebook' in the dataset file.")
+    
+    Codebook = pd.read_excel(File, sheet_name="Codebook", header=0)
+    
+    Name_Group1 = f"{Group1} at {Time1}"
+    Name_Group2 = f"{Group2} at {Time2}"
+    
+    if Name_Group1 not in excel_sheets:
+        raise Exception(f"No dataset with the name {Name_Group1} found.")
+    if Name_Group2 not in excel_sheets:
+        raise Exception(f"No dataset with the name {Name_Group2} found.")
+    
+    Dataset_Group1 = pd.read_excel(File, sheet_name=Name_Group1, header=0, dtype="float")
+    Dataset_Group2 = pd.read_excel(File, sheet_name=Name_Group2, header=0, dtype="float")
+    
+    Name_Group = "Null"
+    if Group1 == Group2:
+        Name_Group = f"{Group1} at {Time1} v. {Time2}"
+    elif Time1 == Time2:
+        Name_Group = f"{Group1} v. {Group2} at {Time1}"
+    elif Group1 != Group2 and Time1 != Time2:
+        Name_Group = f"{Group1} at {Time1} v. {Group2} at {Time2}"
+    else:
+        Name_Group = f"{Group1} at {Time1}"
+    
+    return Codebook, Dataset_Group1, Dataset_Group2, Name_Group1, Name_Group2, Name_Group, Group1, Group2, Time1, Time2, Weight1, Weight2
+
+
+def Nominal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant):
+    # Adds objects to global environment
+    globals()["Alpha"] = Alpha
+    globals()["Only_Significant"] = Only_Significant
+    
+    # Gets the codebook, datasets, and names in a list.
+    List_Datasets_Names = Dataset_Import(Dataset, Group1, Group2)
+    
+    # Extracts the list elements.
+    Codebook, Dataset_Group1, Dataset_Group2, Name_Group1, Name_Group2, Name_Group, Group1, Group2, Time1, Time2, Weight1, Weight2 = List_Datasets_Names
+    
+    # Adds overall column to codebook
+    Overall = Codebook[1]
+    Overall[] = np.nan
+    Overall[0, 0] = "Other"
+    Codebook = pd.concat([Codebook, Overall], axis=1)
+    Codebook = Codebook.loc[:, Codebook.iloc[0].argsort()]
+    
+    # Adds overall column to group data
+    Overall_Group1 = pd.DataFrame(np.nan, index=range(len(Dataset_Group1)), columns=["Overall"])
+    Overall_Group1.iloc[:, 0] = 1
+    Dataset_Group1 = pd.concat([Dataset_Group1, Overall_Group1], axis=1)
+    
+    Overall_Group2 = pd.DataFrame(np.nan, index=range(len(Dataset_Group2)), columns=["Overall"])
+    Overall_Group2.iloc[:, 0] = 1
+    Dataset_Group2 = pd.concat([Dataset_Group2, Overall_Group2], axis=1)
+
+     # Combines the group crosstabs into one crosstab
+    Crosstab = pd.concat([Crosstab_Group1, Crosstab_Group2], axis=1)
+    
+    # Creates spacers
+    VerticalSpacer1 = pd.DataFrame(9999, index=Crosstab.index, columns=["Spacer"])
+    VerticalSpacer2 = pd.DataFrame(9999, index=Crosstab.index, columns=["Spacer"])
+    
+    # Performs a chi-squared test if possible and adds data to crosstabs
+    total_freqs = Frequencies_Group1[0] + Frequencies_Group2[0]
+    if np.sum(total_freqs) > 0:
+        Demographic_Category = Test_Chi_Squared(Demographic_Category, Frequencies_Group1[0], Frequencies_Group2[0])
+    
+    # Adds demographic number to crosstab
+    VerticalSpacer1.iloc[0, 0] = Demographic_Category
+    
+    # Adds rownames to spacer
+    VerticalSpacer2["Spacer"] = Crosstab.index
+    
+    # Creates a vertical header and adds it to the crosstab
+    VerticalHeader = pd.concat([VerticalSpacer1, VerticalSpacer2], axis=1)
+    VerticalHeader.columns = ["Category", "Group"]
+    Crosstab = pd.concat([VerticalHeader, Crosstab], axis=1)
+    
+    # Creates a spacer to divide crosstabs
+    HorizontalSpacer = pd.DataFrame(9999, columns=Crosstab.columns)
+    Crosstab = pd.concat([HorizontalSpacer, Crosstab], axis=0)
+    
+    # Adds crosstab to dataframe containing all crosstabs
+    Crosstabs = Crosstab
+    
+    # Adds the header of the crosstabs to the dataframe as entries
+    Header = Crosstabs.columns
+    Crosstabs.loc["Header"] = Header
+    
+    # Gets the sample sizes and puts them in a text format with the proper format
+    SampleSizeNotation = "n = "
+    SampleSize_Group1 = len(Overall_Group1)
+    SampleSize_Group2 = len(Overall_Group2)
+    SampleSize_Group1 = f"{SampleSizeNotation}{SampleSize_Group1}"
+    SampleSize_Group2 = f"{SampleSizeNotation}{SampleSize_Group2}"
+    
+    # Creates a spacer
+    Spacer = pd.DataFrame(9999, index=[0], columns=["Spacer"])
+    
+    # Creates a dataframe of sample size data
+    SampleSizes = pd.DataFrame(data={"Group1": [Spacer, SampleSize_Group1, Spacer], "Group2": [Spacer, SampleSize_Group2, Spacer]})
+    
+    # Adds sample size data to crosstabs with a spacer in-between
+    Crosstabs = pd.concat([Crosstabs, SampleSizes], axis=1)
+    
+    # Replaces the column numbers of the demographic categories with the names of the categories
+    Crosstabs = Crosstabs.applymap(lambda x: str(x).replace("9999", ""))
+    Crosstabs = Crosstabs.applymap(lambda x: str(x).replace("NaN%", "0%"))
+    
+    # Creates the name of the file.
+    Weights = Weight1 if Weight1 == Weight2 else f"{Weight1} and {Weight2}"
+    File_Name = f"Tables_Nominal_{Name_Group}_{Weights}"
+    Document_Title = f"{Name_Group}, Weighted by {Weights}".replace(" by Overall", "").replace("Weighted by Unweighted", "Unweighted")
+
+
+     # Runs a pre-defined function that creates Excel spreadsheets from the crosstabs.
+    def Export_Excel(Crosstabs, Outputs, File_Name, Name_Group):
+        # ... (implement exporting to Excel using pandas to_excel)
+        Crosstabs.to_excel(f"{Outputs}/{File_Name}.xlsx", index=False)
+    
+    # Runs a pre-defined function that creates Word documents from the crosstabs.
+    def Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
+        # ... (implement exporting to Word using docx library)
+        doc = docx.Document(Template)
+        
+        # Create the Word document content
+        # ... (implement content creation using docx functions)
+        
+        # Save the Word document
+        doc.save(f"{Outputs}/{File_Name}.docx")
