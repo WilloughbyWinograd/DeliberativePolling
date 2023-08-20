@@ -3,6 +3,7 @@ import numpy as np
 import re
 import requests
 import urllib.parse
+from scipy import stats
 from scipy.stats import chi2_contingency
 from docx import Document
 from docx.shared import Pt
@@ -45,6 +46,45 @@ else:
         print("-" * 40)
 
 ######## Above is for testing ########
+
+def Dataset_Import(File, GroupDetails1, GroupDetails2):
+    Group1, Time1, Weight1 = GroupDetails1
+    Group2, Time2, Weight2 = GroupDetails2
+    
+    File = f"./{File}"
+    
+    try:
+        excel_sheets = pd.ExcelFile(File).sheet_names
+    except Exception as e:
+        raise Exception("Error reading Excel file:", e)
+    
+    if "Codebook" not in excel_sheets:
+        raise Exception("No codebook found. Ensure there is a sheet named 'Codebook' in the dataset file.")
+    
+    Codebook = pd.read_excel(File, sheet_name="Codebook", header=0)
+    
+    Name_Group1 = f"{Group1} at {Time1}"
+    Name_Group2 = f"{Group2} at {Time2}"
+    
+    if Name_Group1 not in excel_sheets:
+        raise Exception(f"No dataset with the name {Name_Group1} found.")
+    if Name_Group2 not in excel_sheets:
+        raise Exception(f"No dataset with the name {Name_Group2} found.")
+    
+    Dataset_Group1 = pd.read_excel(File, sheet_name=Name_Group1, header=0, dtype="float")
+    Dataset_Group2 = pd.read_excel(File, sheet_name=Name_Group2, header=0, dtype="float")
+    
+    Name_Group = "Null"
+    if Group1 == Group2:
+        Name_Group = f"{Group1} at {Time1} v. {Time2}"
+    elif Time1 == Time2:
+        Name_Group = f"{Group1} v. {Group2} at {Time1}"
+    elif Group1 != Group2 and Time1 != Time2:
+        Name_Group = f"{Group1} at {Time1} v. {Group2} at {Time2}"
+    else:
+        Name_Group = f"{Group1} at {Time1}"
+    
+    return Codebook, Dataset_Group1, Dataset_Group2, Name_Group1, Name_Group2, Name_Group, Group1, Group2, Time1, Time2, Weight1, Weight2
 
 def Responses_to_Text(Responses, ColumnName, Codebook):
     # Converts column name to string.
@@ -159,6 +199,41 @@ def Test_Chi_Squared(ValuetoMark, Group1, Group2):
         if np.any(Group2 < 5):
             ValuetoMark = f"{ValuetoMark} [Warning: P-value may be incorrect, as at least one expected value is less than 5.]"
 
+    return ValuetoMark
+
+def Test_T(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired, Only_Significant=False, Alpha=0.05):
+    # Unlists data
+    Group1 = np.array(Group1).flatten()
+    Group2 = np.array(Group2).flatten()
+    Weight1 = np.array(Weight1).flatten()
+    Weight2 = np.array(Weight2).flatten()
+    
+    # Performs a t-test if possible
+    Test_Validator = (len(Group1[~np.isnan(Group1)]) > 4) and (len(Group2[~np.isnan(Group2)]) > 4)
+    if Test_Validator:
+        if Paired:
+            if np.sum(np.isfinite(np.column_stack((Group1, Group2)))) < 3:
+                Test_Validator = False
+    
+    if Test_Validator:
+        if Paired:
+            # Gets the p-value from the t-test.
+            _, _, PValue = stats.ttest_rel(Group2 - Group1, weights=Weight1)
+        else:
+            # Gets the p-value from the t-test.
+            _, PValue = stats.ttest_ind(Group1, Group2, weights=(Weight1, Weight2), alternative='two-sided')
+        
+        if not np.isnan(PValue):
+            # If specified, always adds p-values.
+            if not Only_Significant:
+                # Adds p-values
+                ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
+            
+            # If specified, only adds p-values less than or equal to alpha specified.
+            if Only_Significant and PValue <= Alpha:
+                # Adds p-values
+                ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
+    
     return ValuetoMark
 
 def Export_Excel(Crosstabs, Outputs, File_Name, Name_Group):
@@ -996,89 +1071,6 @@ def Ordinal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant,
     Crosstabs = Crosstabs.applymap(
         lambda x: str(x).replace("matrix.data.....nrow...1..ncol...1.", "").replace("NaN%", "").replace("NaN", "").replace(
             "NA%", "").replace("9999", "").replace("Spacer", "").replace("In.the.middle", "In the middle"))
-
-
-import numpy as np
-from scipy import stats
-
-def Test_T(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired, Only_Significant=False, Alpha=0.05):
-    # Unlists data
-    Group1 = np.array(Group1).flatten()
-    Group2 = np.array(Group2).flatten()
-    Weight1 = np.array(Weight1).flatten()
-    Weight2 = np.array(Weight2).flatten()
-    
-    # Performs a t-test if possible
-    Test_Validator = (len(Group1[~np.isnan(Group1)]) > 4) and (len(Group2[~np.isnan(Group2)]) > 4)
-    if Test_Validator:
-        if Paired:
-            if np.sum(np.isfinite(np.column_stack((Group1, Group2)))) < 3:
-                Test_Validator = False
-    
-    if Test_Validator:
-        if Paired:
-            # Gets the p-value from the t-test.
-            _, _, PValue = stats.ttest_rel(Group2 - Group1, weights=Weight1)
-        else:
-            # Gets the p-value from the t-test.
-            _, PValue = stats.ttest_ind(Group1, Group2, weights=(Weight1, Weight2), alternative='two-sided')
-        
-        if not np.isnan(PValue):
-            # If specified, always adds p-values.
-            if not Only_Significant:
-                # Adds p-values
-                ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
-            
-            # If specified, only adds p-values less than or equal to alpha specified.
-            if Only_Significant and PValue <= Alpha:
-                # Adds p-values
-                ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
-    
-    return ValuetoMark
-
-
-
-import pandas as pd
-
-def Dataset_Import(File, GroupDetails1, GroupDetails2):
-    Group1, Time1, Weight1 = GroupDetails1
-    Group2, Time2, Weight2 = GroupDetails2
-    
-    File = f"./{File}"
-    
-    try:
-        excel_sheets = pd.ExcelFile(File).sheet_names
-    except Exception as e:
-        raise Exception("Error reading Excel file:", e)
-    
-    if "Codebook" not in excel_sheets:
-        raise Exception("No codebook found. Ensure there is a sheet named 'Codebook' in the dataset file.")
-    
-    Codebook = pd.read_excel(File, sheet_name="Codebook", header=0)
-    
-    Name_Group1 = f"{Group1} at {Time1}"
-    Name_Group2 = f"{Group2} at {Time2}"
-    
-    if Name_Group1 not in excel_sheets:
-        raise Exception(f"No dataset with the name {Name_Group1} found.")
-    if Name_Group2 not in excel_sheets:
-        raise Exception(f"No dataset with the name {Name_Group2} found.")
-    
-    Dataset_Group1 = pd.read_excel(File, sheet_name=Name_Group1, header=0, dtype="float")
-    Dataset_Group2 = pd.read_excel(File, sheet_name=Name_Group2, header=0, dtype="float")
-    
-    Name_Group = "Null"
-    if Group1 == Group2:
-        Name_Group = f"{Group1} at {Time1} v. {Time2}"
-    elif Time1 == Time2:
-        Name_Group = f"{Group1} v. {Group2} at {Time1}"
-    elif Group1 != Group2 and Time1 != Time2:
-        Name_Group = f"{Group1} at {Time1} v. {Group2} at {Time2}"
-    else:
-        Name_Group = f"{Group1} at {Time1}"
-    
-    return Codebook, Dataset_Group1, Dataset_Group2, Name_Group1, Name_Group2, Name_Group, Group1, Group2, Time1, Time2, Weight1, Weight2
-
 
 def Nominal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant):
     # Adds objects to global environment
