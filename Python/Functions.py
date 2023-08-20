@@ -21,7 +21,7 @@ from openpyxl.styles import Alignment
 
 dataset = pd.read_excel("Python/Dataset.xlsx")
 
-results(dataset="/Inputs/Dataset.xlsx",
+Result(dataset="/Inputs/Dataset.xlsx",
         group_1=["Treatment", "T1", "weight_a"],
         group_2=["Control", "T2", "weight_a"],
         template="Template.docx" )
