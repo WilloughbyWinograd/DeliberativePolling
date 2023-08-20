@@ -1,15 +1,12 @@
 import pandas as pd
-import pandas as pd
 import numpy as np
-import numpy as np
+import re
+import requests
+import urllib.parse
 from scipy.stats import chi2_contingency
-import numpy as np
-from scipy.stats import chi2_contingency
-import pandas as pd
 from docx import Document
 from docx.shared import Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-import re
 from docx import Document
 from docx.shared import Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
@@ -20,9 +17,6 @@ from docx.oxml.shared import OxmlElement
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Alignment
-import pandas as pd
-import requests
-import urllib.parse
 
 dataset = pd.read_excel("Python/Dataset.xlsx")
 
@@ -249,7 +243,7 @@ def Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Ti
     else:
         print("Cannot export Word version due to large file size or template error.")
 
-def export_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, API_Key, Group1):
+def Export_Report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, API_Key, Group1):
 
     def return_text(change):
         if change < 0:
@@ -445,7 +439,7 @@ def export_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_
             document.save(file_path)
             print(f"Exported: {file_name}")
 
-def ordinal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant, Only_Means, API_Key):
+def Ordinal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant, Only_Means, API_Key):
     
     # Gets the codebook, datasets, and names in a list.
     # List_Datasets_Names = Dataset_Import(Dataset, Group1, Group2)
