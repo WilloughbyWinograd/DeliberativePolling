@@ -152,7 +152,7 @@ def text_responses(Responses, ColumnName, Codebook):
     # Returns the formatted responses.
     return Responses
 
-def test_chi(ValuetoMark, Group1, Group2): # Add weighting?
+def test_chi(ValuetoMark, Group1, Group2):
 
     # Organizes the inputs.
     Observed_Expected = np.column_stack((Group1, Group2))
@@ -203,7 +203,9 @@ def test_t(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired):
             # Gets the p-value from the t-test.
             _, PValue = stats.ttest_ind(Group1, Group2, weights=(Weight1, Weight2), alternative='two-sided')
         
-        return f"{ValuetoMark} ({PValue:.3f})"
+        ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
+
+    return ValuetoMark
 
 def export_excel(Crosstabs, Outputs, File_Name, Name_Group):
 
@@ -1038,6 +1040,8 @@ def ordinal(Dataset, Template, Group1, Group2):
     Crosstabs = Crosstabs.applymap(
         lambda x: str(x).replace("matrix.data.....nrow...1..ncol...1.", "").replace("NaN%", "").replace("NaN", "").replace(
             "NA%", "").replace("9999", "").replace("Spacer", "").replace("In.the.middle", "In the middle"))
+
+def analyze(file):
 
 def nominal(Dataset, Template, Group1, Group2):
     
