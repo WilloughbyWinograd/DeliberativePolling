@@ -13,13 +13,13 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from openpyxl.utils.dataframe import dataframe_to_rows
 
-class sample:
-    def __init__(self, name, time, weight):
-        self.name = name
+class group:
+    def __init__(self, group, time, weight):
+        self.group = group
         self.time = time
-        self.title = f"{name} at {time}"
+        self.name = f"{group} at {time}"
         self.weight = weight
-        self.data = pd.read_excel(file, sheet_name = self.title, header = 0, dtype = "float")
+        self.data = pd.read_excel(file, sheet_name = self.name, header = 0, dtype = "float")
 
 def comparison_name(sample1, sample2):
 
@@ -456,17 +456,17 @@ def write_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_T
 def ordinal(sample):
 
     Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
-    Dataset_Group1 = sample1.data
-    Dataset_Group2 = sample2.data
-    Name_Group1 = sample1.title
-    Name_Group2 = sample2.title
-    Name_Group = comparison_name(sample1, sample2)
-    Group1 = sample1.name
-    Group2 = sample2.name
-    Time1 = sample1.time
-    Time2 = sample2.time
-    Weight1 = sample1.weight
-    Weight2 = sample2.weight
+    Dataset_Group1 = sample.one.data
+    Dataset_Group2 = sample.two.data
+    Name_Group1 = sample.one.name
+    Name_Group2 = sample.two.name
+    Name_Group = sample.name = comparison_name(sample1, sample2)
+    Group1 = sample.one.group
+    Group2 = sample.two.group
+    Time1 = sample.one.time
+    Time2 = sample.two.group
+    Weight1 = sample.one.weight
+    Weight2 = sample.two.weight
 
     # Order datasets based on "Identification Number" column
     Dataset_Group1 = Dataset_Group1.sort_values(by='Identification Number')
@@ -927,7 +927,6 @@ def ordinal(sample):
     # Combine crosstabs to one dataframe.
     Crosstabs = pd.concat([Crosstabs, Spacer, Crosstab])
 
-
     # Function to calculate sample sizes
     def calculate_sample_sizes(responses):
         return len(responses)
@@ -1008,51 +1007,42 @@ def ordinal(sample):
         lambda x: str(x).replace("matrix.data.....nrow...1..ncol...1.", "").replace("NaN%", "").replace("NaN", "").replace(
             "NA%", "").replace("9999", "").replace("Spacer", "").replace("In.the.middle", "In the middle"))
 
-def nominal(samples):
+def nominal(sample):
 
     Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
-    Dataset_Group1 = sample1.data
-    Dataset_Group2 = sample2.data
-    Name_Group1 = sample1.title
-    Name_Group2 = sample2.title
-    Name_Group = comparison_name(sample1, sample2)
-    Group1 = sample1.name
-    Group2 = sample2.name
-    Time1 = sample1.time
-    Time2 = sample2.time
-    Weight1 = sample1.weight
-    Weight2 = sample2.weight
-    
-    Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
-    Dataset_Group1 = sample1.data
-    Dataset_Group2 = sample2.data
-    Name_Group1 = sample1.title
-    Name_Group2 = sample2.title
-    Name_Group = comparison_name(sample1, sample2)
-    Group1 = sample1.name
-    Group2 = sample2.name
-    Time1 = sample1.time
-    Time2 = sample2.time
-    Weight1 = sample1.weight
-    Weight2 = sample2.weight
+    sample.one.data = sample.one.data
+    sample.two.data = sample.two.data
+    Name_Group1 = sample.one.name
+    Name_Group2 = sample.two.name
+    Name_Group = sample.name = comparison_name(sample1, sample2)
+    Group1 = sample.one.group
+    Group2 = sample.two.group
+    Time1 = sample.one.time
+    Time2 = sample.two.group
+    Weight1 = sample.one.weight
+    Weight2 = sample.two.weight
     
     # Adds overall column to codebook
-    Overall = Codebook[1]
-    Overall[] = np.nan
-    Overall[0, 0] = "Other"
-    Codebook = pd.concat([Codebook, Overall], axis=1)
-    Codebook = Codebook.loc[:, Codebook.iloc[0].argsort()]
+    Overall = Codebook.iloc[:, 0].to_frame()
+    Overall[:] = np.nan
+    Overall.iloc[0] = "Other"
+    Overall.columns = ['Overall']
+    Codebook = pd.concat([Codebook, Overall], axis = 1)
     
-    # Adds overall column to group data
-    Overall_Group1 = pd.DataFrame(np.nan, index=range(len(Dataset_Group1)), columns=["Overall"])
-    Overall_Group1.iloc[:, 0] = 1
-    Dataset_Group1 = pd.concat([Dataset_Group1, Overall_Group1], axis=1)
-    
-    Overall_Group2 = pd.DataFrame(np.nan, index=range(len(Dataset_Group2)), columns=["Overall"])
-    Overall_Group2.iloc[:, 0] = 1
-    Dataset_Group2 = pd.concat([Dataset_Group2, Overall_Group2], axis=1)
+    # Organizes the codebook by column value type (opinions, demographics, etc.)
+    Codebook = Codebook.loc[:, Codebook.iloc[0].sort_values().index]
 
-     # Combines the group crosstabs into one crosstab
+    # Adds overall column to group data
+    sample.one.data = sample.one.data.assign(Overall = 1)
+    sample.two.data = sample.two.data.assign(Overall = 1)
+
+    # Gets the column number of the first and last demographic and questions.
+    Nominal = np.where(Codebook.iloc[0] == "Nominal")[0]
+    Ordinal = np.where(Codebook.iloc[0] == "Ordinal")[0]
+
+
+    
+    # Combines the group crosstabs into one crosstab
     Crosstab = pd.concat([Crosstab_Group1, Crosstab_Group2], axis=1)
     
     # Creates spacers
@@ -1135,15 +1125,15 @@ def analysis(file):
     
     file = "Python/Dataset.xlsx"
 
-    class samples:
+    class sample:
         pass
 
-    sample.name = comparison_name(sample1, sample2)
-    sample.one = sample("Treatment", "T1", "Weight A")
-    sample.two = sample("Treatment", "T2", "Weight A")
+    sample.one = group("Treatment", "T1", "Weight A")
+    sample.two = group("Treatment", "T2", "Weight A")
+    sample.name = comparison_name(sample.one, sample.two)
 
-    nominal(samples)
-    ordinal(samples)
+    nominal(sample)
+    ordinal(sample)
 
     print("Analysis complete.")
 
