@@ -1041,8 +1041,6 @@ def ordinal(Dataset, Template, Group1, Group2):
         lambda x: str(x).replace("matrix.data.....nrow...1..ncol...1.", "").replace("NaN%", "").replace("NaN", "").replace(
             "NA%", "").replace("9999", "").replace("Spacer", "").replace("In.the.middle", "In the middle"))
 
-def analyze(file):
-
 def nominal(Dataset, Template, Group1, Group2):
     
     Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
@@ -1152,3 +1150,5 @@ def nominal(Dataset, Template, Group1, Group2):
     # Runs a pre-defined function that creates Word documents from the crosstabs
     Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type="Ordinal", Demographic_Category,
                 Codebook)
+
+def analyze(file):
