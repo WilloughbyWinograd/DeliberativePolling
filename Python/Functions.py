@@ -1138,9 +1138,9 @@ def analysis(file):
     class samples:
         pass
 
-    samples.name = comparison_name(sample1, sample2)
-    samples.sample1 = sample("Treatment", "T1", "Weight A")
-    samples.sample2 = sample("Treatment", "T2", "Weight A")
+    sample.name = comparison_name(sample1, sample2)
+    sample.one = sample("Treatment", "T1", "Weight A")
+    sample.two = sample("Treatment", "T2", "Weight A")
 
     nominal(samples)
     ordinal(samples)
