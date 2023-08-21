@@ -19,12 +19,11 @@ from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Alignment
 
-dataset = pd.read_excel("Python/Dataset.xlsx")
+file = "Python/Dataset.xlsx"
+sample1 = sample("Participants", "T1", "Weight A")
+sample2 = sample("Participants", "T2", "Weight A")
 
-Result(dataset="/Inputs/Dataset.xlsx",
-        group_1=["Treatment", "T1", "weight_a"],
-        group_2=["Control", "T2", "weight_a"],
-        template="Template.docx" )
+analyze("Python/Dataset.xlsx")
 
 excel_comparison = pd.read_excel("Python/(Original) Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
 excel_new = pd.read_excel("Python/(Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
@@ -47,46 +46,25 @@ else:
 
 ######## Above is for testing ########
 
-def Dataset_Import(File, GroupDetails1, GroupDetails2):
-    Group1, Time1, Weight1 = GroupDetails1
-    Group2, Time2, Weight2 = GroupDetails2
-    
-    File = f"./{File}"
-    
-    try:
-        excel_sheets = pd.ExcelFile(File).sheet_names
-    except Exception as e:
-        raise Exception("Error reading Excel file:", e)
-    
-    if "Codebook" not in excel_sheets:
-        raise Exception("No codebook found. Ensure there is a sheet named 'Codebook' in the dataset file.")
-    
-    Codebook = pd.read_excel(File, sheet_name="Codebook", header=0)
-    
-    Name_Group1 = f"{Group1} at {Time1}"
-    Name_Group2 = f"{Group2} at {Time2}"
-    
-    if Name_Group1 not in excel_sheets:
-        raise Exception(f"No dataset with the name {Name_Group1} found.")
-    if Name_Group2 not in excel_sheets:
-        raise Exception(f"No dataset with the name {Name_Group2} found.")
-    
-    Dataset_Group1 = pd.read_excel(File, sheet_name=Name_Group1, header=0, dtype="float")
-    Dataset_Group2 = pd.read_excel(File, sheet_name=Name_Group2, header=0, dtype="float")
-    
-    Name_Group = "Null"
-    if Group1 == Group2:
-        Name_Group = f"{Group1} at {Time1} v. {Time2}"
-    elif Time1 == Time2:
-        Name_Group = f"{Group1} v. {Group2} at {Time1}"
-    elif Group1 != Group2 and Time1 != Time2:
-        Name_Group = f"{Group1} at {Time1} v. {Group2} at {Time2}"
-    else:
-        Name_Group = f"{Group1} at {Time1}"
-    
-    return Codebook, Dataset_Group1, Dataset_Group2, Name_Group1, Name_Group2, Name_Group, Group1, Group2, Time1, Time2, Weight1, Weight2
+class sample:
+    def __init__(self, name, time, weight):
+        self.name = name
+        self.time = time
+        self.title = f"{name} at {time}"
+        self.weight = weight
+        self.data = pd.read_excel(file, sheet_name = self.title, header = 0, dtype = "float")
 
-def Responses_to_Text(Responses, ColumnName, Codebook):
+def comparison_name(sample1, sample2):
+
+    if sample1.name == sample2.name:
+        return f"{sample1.name} at {sample1.time} v. {sample2.time}"
+    elif sample1.time == sample2.time:
+        return f"{sample1.name} v. {sample2.name} at {sample1.time}"
+    else:
+        return f"{sample1.name} at {sample1.time} v. {sample2.name} at {sample2.time}"
+
+def text_responses(Responses, ColumnName, Codebook):
+
     # Converts column name to string.
     ColumnName = str(ColumnName)
 
@@ -174,7 +152,8 @@ def Responses_to_Text(Responses, ColumnName, Codebook):
     # Returns the formatted responses.
     return Responses
 
-def Test_Chi_Squared(ValuetoMark, Group1, Group2):
+def test_chi(ValuetoMark, Group1, Group2): # Add weighting?
+
     # Organizes the inputs.
     Observed_Expected = np.column_stack((Group1, Group2))
 
@@ -201,7 +180,8 @@ def Test_Chi_Squared(ValuetoMark, Group1, Group2):
 
     return ValuetoMark
 
-def Test_T(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired, Only_Significant=False, Alpha=0.05):
+def test_t(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired):
+
     # Unlists data
     Group1 = np.array(Group1).flatten()
     Group2 = np.array(Group2).flatten()
@@ -223,20 +203,10 @@ def Test_T(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired, Only_Significa
             # Gets the p-value from the t-test.
             _, PValue = stats.ttest_ind(Group1, Group2, weights=(Weight1, Weight2), alternative='two-sided')
         
-        if not np.isnan(PValue):
-            # If specified, always adds p-values.
-            if not Only_Significant:
-                # Adds p-values
-                ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
-            
-            # If specified, only adds p-values less than or equal to alpha specified.
-            if Only_Significant and PValue <= Alpha:
-                # Adds p-values
-                ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
-    
-    return ValuetoMark
+        return f"{ValuetoMark} ({PValue:.3f})"
 
-def Export_Excel(Crosstabs, Outputs, File_Name, Name_Group):
+def export_excel(Crosstabs, Outputs, File_Name, Name_Group):
+
     # Gets the file name.
     File_Name = File_Name + ".xlsx"
 
@@ -250,7 +220,7 @@ def Export_Excel(Crosstabs, Outputs, File_Name, Name_Group):
     # Notifies of document export
     print(f"Exported: {File_Name}")
 
-def Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
+def export_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
     if Crosstabs.shape[1] < 14:
         File_Name = File_Name + ".docx"
         ColumnNumbers = Crosstabs.shape[1]
@@ -318,7 +288,7 @@ def Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Ti
     else:
         print("Cannot export Word version due to large file size or template error.")
 
-def Export_Report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, API_Key, Group1):
+def export_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, API_Key, Group1):
 
     def return_text(change):
         if change < 0:
@@ -514,23 +484,20 @@ def Export_Report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_
             document.save(file_path)
             print(f"Exported: {file_name}")
 
-def Ordinal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant, Only_Means, API_Key):
+def ordinal(Dataset, Template, Group1, Group2):
     
-    # Gets the codebook, datasets, and names in a list.
-    # List_Datasets_Names = Dataset_Import(Dataset, Group1, Group2)
-    # Extracts the list elements.
-    Codebook = List_Datasets_Names[0]
-    Dataset_Group1 = List_Datasets_Names[1]
-    Dataset_Group2 = List_Datasets_Names[2]
-    Name_Group1 = List_Datasets_Names[3]
-    Name_Group2 = List_Datasets_Names[4]
-    Name_Group = List_Datasets_Names[5]
-    Group1 = List_Datasets_Names[6]
-    Group2 = List_Datasets_Names[7]
-    Time1 = List_Datasets_Names[8]
-    Time2 = List_Datasets_Names[9]
-    Weight1 = List_Datasets_Names[10]
-    Weight2 = List_Datasets_Names[11]
+    Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
+    Dataset_Group1 = sample1.data
+    Dataset_Group2 = sample2.data
+    Name_Group1 = sample1.title
+    Name_Group2 = sample2.title
+    Name_Group = comparison_name(sample1, sample2)
+    Group1 = sample1.name
+    Group2 = sample2.name
+    Time1 = sample1.time
+    Time2 = sample2.time
+    Weight1 = sample1.weight
+    Weight2 = sample2.weight
 
     # Order datasets based on "Identification Number" column
     Dataset_Group1 = Dataset_Group1.sort_values(by='Identification Number')
@@ -1072,16 +1039,20 @@ def Ordinal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant,
         lambda x: str(x).replace("matrix.data.....nrow...1..ncol...1.", "").replace("NaN%", "").replace("NaN", "").replace(
             "NA%", "").replace("9999", "").replace("Spacer", "").replace("In.the.middle", "In the middle"))
 
-def Nominal(Dataset, Template, Outputs, Group1, Group2, Alpha, Only_Significant):
-    # Adds objects to global environment
-    globals()["Alpha"] = Alpha
-    globals()["Only_Significant"] = Only_Significant
+def nominal(Dataset, Template, Group1, Group2):
     
-    # Gets the codebook, datasets, and names in a list.
-    List_Datasets_Names = Dataset_Import(Dataset, Group1, Group2)
-    
-    # Extracts the list elements.
-    Codebook, Dataset_Group1, Dataset_Group2, Name_Group1, Name_Group2, Name_Group, Group1, Group2, Time1, Time2, Weight1, Weight2 = List_Datasets_Names
+    Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
+    Dataset_Group1 = sample1.data
+    Dataset_Group2 = sample2.data
+    Name_Group1 = sample1.title
+    Name_Group2 = sample2.title
+    Name_Group = comparison_name(sample1, sample2)
+    Group1 = sample1.name
+    Group2 = sample2.name
+    Time1 = sample1.time
+    Time2 = sample2.time
+    Weight1 = sample1.weight
+    Weight2 = sample2.weight
     
     # Adds overall column to codebook
     Overall = Codebook[1]
