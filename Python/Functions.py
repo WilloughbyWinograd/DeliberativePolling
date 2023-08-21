@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import re
 import requests
-import urllib.parse
 from scipy import stats
 from scipy.stats import chi2_contingency
 from docx import Document
@@ -12,39 +11,7 @@ from docx import Document
 from docx.shared import Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
-from docx.oxml.ns import nsdecls
-from docx.oxml import parse_xml
-from docx.oxml.shared import OxmlElement
-from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl.styles import Alignment
-
-file = "Python/Dataset.xlsx"
-sample1 = sample("Participants", "T1", "Weight A")
-sample2 = sample("Participants", "T2", "Weight A")
-
-analyze("Python/Dataset.xlsx")
-
-excel_comparison = pd.read_excel("Python/(Original) Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
-excel_new = pd.read_excel("Python/(Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
-
-# Check if both dataframes are of the same shape
-if excel_comparison.shape != excel_new.shape:
-    print("Dataframes are of different shapes!")
-else:
-    # Compare the two dataframes and get a boolean dataframe
-    df_diff = excel_comparison.eq(excel_new)
-
-    # Find where the dataframes are not equal
-    rows, cols = np.where(df_diff == False)
-    
-    for row, col in zip(rows, cols):
-        print(f"Difference at Row {row+1}, Column {col+1}")
-        print(f"Original: {excel_comparison.iloc[row, col]}")
-        print(f"New: {excel_new.iloc[row, col]}")
-        print("-" * 40)
-
-######## Above is for testing ########
 
 class sample:
     def __init__(self, name, time, weight):
@@ -207,7 +174,7 @@ def test_t(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired):
 
     return ValuetoMark
 
-def export_excel(Crosstabs, Outputs, File_Name, Name_Group):
+def write_excel(Crosstabs, Outputs, File_Name, Name_Group):
 
     # Gets the file name.
     File_Name = File_Name + ".xlsx"
@@ -222,7 +189,7 @@ def export_excel(Crosstabs, Outputs, File_Name, Name_Group):
     # Notifies of document export
     print(f"Exported: {File_Name}")
 
-def export_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
+def write_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
     if Crosstabs.shape[1] < 14:
         File_Name = File_Name + ".docx"
         ColumnNumbers = Crosstabs.shape[1]
@@ -290,7 +257,7 @@ def export_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Ti
     else:
         print("Cannot export Word version due to large file size or template error.")
 
-def export_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, API_Key, Group1):
+def write_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, API_Key, Group1):
 
     def return_text(change):
         if change < 0:
@@ -486,8 +453,8 @@ def export_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_
             document.save(file_path)
             print(f"Exported: {file_name}")
 
-def ordinal(Dataset, Template, Group1, Group2):
-    
+def ordinal(sample):
+
     Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
     Dataset_Group1 = sample1.data
     Dataset_Group2 = sample2.data
@@ -550,7 +517,7 @@ def ordinal(Dataset, Template, Group1, Group2):
     while True:
     # Counts repetitions.
         QuestionsCounter = QuestionsCounter + 1
-
+    
     # Ends crosstab creation if all questions have been analyzed.
     if QuestionsCounter == QuestionsCounter_End:
     # Ends repetitions.
@@ -1041,7 +1008,20 @@ def ordinal(Dataset, Template, Group1, Group2):
         lambda x: str(x).replace("matrix.data.....nrow...1..ncol...1.", "").replace("NaN%", "").replace("NaN", "").replace(
             "NA%", "").replace("9999", "").replace("Spacer", "").replace("In.the.middle", "In the middle"))
 
-def nominal(Dataset, Template, Group1, Group2):
+def nominal(samples):
+
+    Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
+    Dataset_Group1 = sample1.data
+    Dataset_Group2 = sample2.data
+    Name_Group1 = sample1.title
+    Name_Group2 = sample2.title
+    Name_Group = comparison_name(sample1, sample2)
+    Group1 = sample1.name
+    Group2 = sample2.name
+    Time1 = sample1.time
+    Time2 = sample2.time
+    Weight1 = sample1.weight
+    Weight2 = sample2.weight
     
     Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
     Dataset_Group1 = sample1.data
@@ -1133,12 +1113,12 @@ def nominal(Dataset, Template, Group1, Group2):
 
 
      # Runs a pre-defined function that creates Excel spreadsheets from the crosstabs.
-    def Export_Excel(Crosstabs, Outputs, File_Name, Name_Group):
+    def write_excel(Crosstabs, Outputs, File_Name, Name_Group):
         # ... (implement exporting to Excel using pandas to_excel)
         Crosstabs.to_excel(f"{Outputs}/{File_Name}.xlsx", index=False)
     
     # Runs a pre-defined function that creates Word documents from the crosstabs.
-    def Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
+    def write_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
         # ... (implement exporting to Word using docx library)
         doc = docx.Document(Template)
         
@@ -1148,7 +1128,34 @@ def nominal(Dataset, Template, Group1, Group2):
         # Save the Word document
         doc.save(f"{Outputs}/{File_Name}.docx")
     # Runs a pre-defined function that creates Word documents from the crosstabs
-    Export_Word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type="Ordinal", Demographic_Category,
+    write_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type="Ordinal", Demographic_Category,
                 Codebook)
 
-def analyze(file):
+def analysis(file):
+    
+    file = "Python/Dataset.xlsx"
+
+    class samples:
+        pass
+
+    samples.name = comparison_name(sample1, sample2)
+    samples.sample1 = sample("Treatment", "T1", "Weight A")
+    samples.sample2 = sample("Treatment", "T2", "Weight A")
+
+    nominal(samples)
+    ordinal(samples)
+
+    print("Analysis complete.")
+
+
+################################ BELOW IS FOR TESTING ################################
+################################ BELOW IS FOR TESTING ################################
+################################ BELOW IS FOR TESTING ################################
+
+analysis("Python/Dataset.xlsx")
+
+excel_comparison = pd.read_excel("Python/(Original) Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
+excel_new = pd.read_excel("Python/Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
+if excel_comparison.shape != excel_new.shape:
+    print("Dataframes are of different shapes!")
+else:
