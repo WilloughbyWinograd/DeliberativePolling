@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import re
 import requests
+import pyreadstat
+from itertools import combinations
+from itertools import product
 from scipy import stats
 from scipy.stats import chi2_contingency
 from docx import Document
@@ -13,13 +16,14 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from openpyxl.utils.dataframe import dataframe_to_rows
 
-class group:
+class subsample:
     def __init__(self, group, time, weight):
         self.group = group
         self.time = time
-        self.name = f"{group} at {time}"
         self.weight = weight
-        self.data = pd.read_excel(file, sheet_name = self.name, header = 0, dtype = "float").assign(Overall = 1)
+        self.name = f"{group} at {time}"
+        self.values = values[(values['Group'] == group) & (values['Time'] == time)].assign(Overall = 1)
+        self.labels = labels[(values['Group'] == group) & (values['Time'] == time)].assign(Overall = 1)
 
 def comparison_name(sample1, sample2):
 
@@ -30,94 +34,19 @@ def comparison_name(sample1, sample2):
     else:
         return f"{sample1.group} at {sample1.time} v. {sample2.group} at {sample2.time}"
 
-def text_responses(Responses, ColumnName, Codebook):
+def create_crosstab(data, index, columns, weight):
+    
+    absolute_frequencies = pd.crosstab(
+        index = data[index],
+        columns = data[columns],
+        values = data[weight],
+        aggfunc = 'sum')
+    
+    relative_frequencies = (absolute_frequencies / absolute_frequencies.sum().sum() * 100).round(1)
+    
+    combined_frequencies = relative_frequencies.apply(lambda x: x).applymap(lambda x: f"({x}%)") + ' ' + absolute_frequencies.astype(int).astype(str)
 
-    # Converts column name to string.
-    ColumnName = str(ColumnName)
-
-    # Gets the text value
-    Response_Negative = str(Codebook[4, Codebook.columns.get_loc(ColumnName)])
-    Response_Neutral = str(Codebook[5, Codebook.columns.get_loc(ColumnName)])
-    Response_Positive = str(Codebook[6, Codebook.columns.get_loc(ColumnName)])
-
-    Scale = str(Codebook[3, Codebook.columns.get_loc(ColumnName)])
-
-    # Condenses the 0-100 scale.
-    if Scale == "0 to 100":
-
-        # Ensures there are no responses outside of the scale.
-        if (np.nanmax(np.nan_to_num(Responses)) > 100) or (np.nanmin(np.nan_to_num(Responses)) < 0):
-            raise ValueError(f"There is a response outside of the {Scale} scale specified in the codebook for {ColumnName}")
-
-        # Replaces the numeric responses with text responses.
-        Responses[Responses > 66] = Response_Positive
-        Responses[(Responses < 67) & (Responses > 33)] = Response_Neutral
-        Responses[Responses < 33] = Response_Negative
-    elif Scale == "0 to 10":
-
-        # Ensures there are no responses outside of the scale.
-        if (np.nanmax(np.nan_to_num(Responses)) > 10) or (np.nanmin(np.nan_to_num(Responses)) < 0):
-            raise ValueError(f"There is a response outside of the {Scale} scale specified in the codebook for {ColumnName}")
-
-        # Replaces the numeric responses with text responses.
-        Responses[Responses > 5] = Response_Positive
-        Responses[Responses == 5] = Response_Neutral
-        Responses[Responses < 5] = Response_Negative
-    elif Scale == "1 to 5":
-
-        # Ensures there are no responses outside of the scale.
-        if (np.nanmax(np.nan_to_num(Responses)) > 5) or (np.nanmin(np.nan_to_num(Responses)) < 1):
-            raise ValueError(f"There is a response outside of the {Scale} scale specified in the codebook for {ColumnName}")
-
-        # Replaces the numeric responses with text responses.
-        Responses[Responses > 3] = Response_Positive
-        Responses[Responses == 3] = Response_Neutral
-        Responses[Responses < 3] = Response_Negative
-    elif Scale == "Difference":
-
-        # Ensures there are no responses outside of the scale.
-        if (np.nanmax(np.nan_to_num(Responses)) > 10) or (np.nanmin(np.nan_to_num(Responses)) < -10):
-            raise ValueError(f"There is a response outside of the {Scale} scale specified in the codebook for {ColumnName}")
-
-        # Replaces the numeric responses with text responses.
-        Responses[Responses > 0] = Response_Positive
-        Responses[Responses == 0] = Response_Neutral
-        Responses[Responses < 0] = Response_Negative
-    elif Scale == "1 to 3":
-
-        # Ensures there are no responses outside of the scale.
-        if (np.nanmax(np.nan_to_num(Responses)) > 3) or (np.nanmin(np.nan_to_num(Responses)) < 1):
-            raise ValueError(f"There is a response outside of the {Scale} scale specified in the codebook for {ColumnName}")
-
-        # Replaces the numeric responses with text responses.
-        Responses[Responses == 1] = Response_Negative
-        Responses[Responses == 2] = Response_Neutral
-        Responses[Responses == 3] = Response_Positive
-    elif Scale == "1 to 4":
-
-        # Ensures there are no responses outside of the scale.
-        if (np.nanmax(np.nan_to_num(Responses)) > 4) or (np.nanmin(np.nan_to_num(Responses)) < 1):
-            raise ValueError(f"There is a response outside of the {Scale} scale specified in the codebook for {ColumnName}")
-
-        # Replaces the numeric responses with text responses.
-        Responses[Responses == 1] = Response_Negative
-        Responses[Responses == 2] = Response_Negative
-        Responses[Responses == 3] = Response_Positive
-        Responses[Responses == 4] = Response_Positive
-    elif Scale == "0 to 1":
-
-        # Ensures there are no responses outside of the scale.
-        if (np.nanmax(np.nan_to_num(Responses)) > 1) or (np.nanmin(np.nan_to_num(Responses)) < 0):
-            raise ValueError(f"There is a response outside of the {Scale} scale specified in the codebook for {ColumnName}")
-
-        # Replaces the numeric responses with text responses.
-        Responses[Responses == 1] = Response_Positive
-        Responses[Responses == 0] = Response_Negative
-    else:
-        raise ValueError(f"Scale {Scale} for {ColumnName} not recognized. Please pick a pre-defined scale such as 0 to 100, 0 to 10, 1 to 5, 1 to 3, or 0 to 1.")
-
-    # Returns the formatted responses.
-    return Responses
+    return combined_frequencies
 
 def test_chi(ValuetoMark, Group1, Group2):
 
@@ -1007,115 +936,64 @@ def ordinal_analysis(sample):
         lambda x: str(x).replace("matrix.data.....nrow...1..ncol...1.", "").replace("NaN%", "").replace("NaN", "").replace(
             "NA%", "").replace("9999", "").replace("Spacer", "").replace("In.the.middle", "In the middle"))
 
-def nominal_crosstab(sample, nominal_column):
+def nominal_crosstab(sample, nominal_variable):
 
-    nominal_column = sample.codebook.columns[sample.codebook.iloc[0] == 'Nominal'][0] ### FOR TESTING ###
-
-    absolute_frequencies = pd.crosstab(
-        index = nominal,
-        columns = 1,
-        values = weights,
-        aggfunc = 'sum')
-
-    relative_frequencies = (absolute_frequencies / absolute_frequencies.sum().sum() * 100).round(1)
+    sample.one.crosstab = create_crosstab(
+        data = sample.one.labels,
+        index = nominal_variable,
+        columns = "Overall",
+        weight = sample.one.weight)
     
-    relative_frequencies.apply(lambda x: x).applymap(lambda x: f"({x}%)") + ' ' + absolute_frequencies.astype(int).astype(str)
-
-
-
-    sample.one.crosstab
-
-    percentages.applymap(lambda x: f"{x}%")
-
-
-
-
-
-
+    sample.two.crosstab = create_crosstab(
+        data = sample.two.labels,
+        index = nominal_variable,
+        columns = "Overall",
+        weight = sample.two.weight)
+    
+    sample.one.crosstab.columns = [sample.one.name]
+    sample.two.crosstab.columns = [sample.two.name]
+    
+    crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab], axis=1)
 
     return crosstab
 
 def nominal_analysis(sample):
     
     crosstabs = pd.DataFrame()
-    
-    for nominal_column in sample.codebook.columns[sample.codebook.iloc[0] == 'Nominal']:
-        for ordinal_column in sample.codebook.columns[sample.codebook.iloc[0] == 'Ordinal']:
-            crosstabs.append(nominal_crosstab(sample, nominal_column, ordinal_column))
-    
-    # Adds the header of the crosstabs to the dataframe as entries
-    Header = Crosstabs.columns
-    Crosstabs.loc["Header"] = Header
-    
-    # Gets the sample sizes and puts them in a text format with the proper format
-    SampleSizeNotation = "n = "
-    SampleSize_Group1 = len(Overall_Group1)
-    SampleSize_Group2 = len(Overall_Group2)
-    SampleSize_Group1 = f"{SampleSizeNotation}{SampleSize_Group1}"
-    SampleSize_Group2 = f"{SampleSizeNotation}{SampleSize_Group2}"
-    
-    # Creates a spacer
-    Spacer = pd.DataFrame(9999, index=[0], columns=["Spacer"])
-    
-    # Creates a dataframe of sample size data
-    SampleSizes = pd.DataFrame(data={"Group1": [Spacer, SampleSize_Group1, Spacer], "Group2": [Spacer, SampleSize_Group2, Spacer]})
-    
-    # Adds sample size data to crosstabs with a spacer in-between
-    Crosstabs = pd.concat([Crosstabs, SampleSizes], axis=1)
-    
-    # Replaces the column numbers of the demographic categories with the names of the categories
-    Crosstabs = Crosstabs.applymap(lambda x: str(x).replace("9999", ""))
-    Crosstabs = Crosstabs.applymap(lambda x: str(x).replace("NaN%", "0%"))
-    
-    # Creates the name of the file.
-    Weights = Weight1 if Weight1 == Weight2 else f"{Weight1} and {Weight2}"
-    File_Name = f"Tables_Nominal_{Name_Group}_{Weights}"
-    Document_Title = f"{Name_Group}, Weighted by {Weights}".replace(" by Overall", "").replace("Weighted by Unweighted", "Unweighted")
 
+    sample.metadata.variable_measure.pop('Group', None)
+    sample.metadata.variable_measure.pop('Time', None)
+    nominal_variables = [key for key, measure in sample.metadata.variable_measure.items() if measure == 'nominal']
 
-     # Runs a pre-defined function that creates Excel spreadsheets from the crosstabs.
-    def write_excel(Crosstabs, Outputs, File_Name, Name_Group):
-        # ... (implement exporting to Excel using pandas to_excel)
-        Crosstabs.to_excel(f"{Outputs}/{File_Name}.xlsx", index=False)
-    
-    # Runs a pre-defined function that creates Word documents from the crosstabs.
-    def write_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
-        # ... (implement exporting to Word using docx library)
-        doc = docx.Document(Template)
+    for nominal_variable in nominal_variables:
+
+        crosstabs = pd.concat([crosstabs, nominal_crosstab(sample, nominal_variable)])
         
-        # Create the Word document content
-        # ... (implement content creation using docx functions)
-        
-        # Save the Word document
-        doc.save(f"{Outputs}/{File_Name}.docx")
-    # Runs a pre-defined function that creates Word documents from the crosstabs
-    write_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type="Ordinal", Demographic_Category,
-                Codebook)
+        crosstabs.loc[len(crosstabs)] = np.nan # Add spacer
+
+    return crosstabs
 
 def analysis(file):
-    
-    file = "Python/Dataset.xlsx" ### FOR TESTING ###
+   
+   file = "Python/Dataset (Short).sav" ### FOR TESTING ###
 
-    class sample:
-        one = group("Treatment", "T1", "weight_a") ### FOR TESTING ###
-        two = group("Treatment", "T2", "weight_a") ### FOR TESTING ###
-        name = comparison_name(one, two)
-        codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0).assign(Overall = np.nan)
+   values, metadata = pyreadstat.read_sav(file, apply_value_formats = False)
+   labels = pyreadstat.read_sav(file, apply_value_formats = True)[0]
 
-    nominal_analysis(sample)
-    ordinal_analysis(sample)
+   values['Overall'] = np.nan
+   labels['Overall'] = np.nan
 
-    print("Analysis complete.")
+   for combination in list(combinations(list(product(values["Group"].unique(), values["Time"].unique())), 2)):
+        
+        combination = (('Treatment', 'T1'), ('Control', 'T2')) ### FOR TESTING ###
 
+        class sample:
+            one = subsample(combination[0][0], combination[0][1], "weight_a") # Add multiweight support
+            two = subsample(combination[1][0], combination[1][1], "weight_a")
+            name = comparison_name(one, two)
+            metadata = metadata ##.assign(Overall = np.nan)
+        
+        nominal_analysis(sample)
+        #ordinal_analysis(sample)
 
-################################ BELOW IS FOR TESTING ################################
-################################ BELOW IS FOR TESTING ################################
-################################ BELOW IS FOR TESTING ################################
-
-analysis("Python/Dataset.xlsx")
-
-excel_comparison = pd.read_excel("Python/(Original) Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
-excel_new = pd.read_excel("Python/Tables - Ordinal - Treatment at T1 v. Control at T2 - weight_a - Gender.xlsx")
-if excel_comparison.shape != excel_new.shape:
-    print("Dataframes are of different shapes!")
-else:
+   print("Analysis complete.")
