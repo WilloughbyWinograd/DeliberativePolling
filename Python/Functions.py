@@ -97,20 +97,16 @@ def sample_size(variable, sample):
 
     return f"{variable} (n={len(sample)})"
 
-def write_excel(Crosstabs, Outputs, File_Name, Name_Group):
+def write_excel(crosstabs, name, title):
 
-    # Gets the file name.
-    File_Name = File_Name + ".xlsx"
+    name += ".xlsx"
 
-    # Ensures the sheet name is the proper length.
-    if len(Name_Group) > 31:
-        Name_Group = Name_Group[:28] + "..."
+    if len(title) > 31:
+        title = title[:28] + "..."
+    
+    crosstabs.to_excel(name, sheet_name = title, index = False, header = True)
 
-    # Exports crosstab to Excel file
-    Crosstabs.to_excel(Outputs + "/" + File_Name, sheet_name=Name_Group, index=False, header=False)
-
-    # Notifies of document export
-    print(f"Exported: {File_Name}")
+    print(f"Exported: {name}")
 
 def write_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
     if Crosstabs.shape[1] < 14:
@@ -976,8 +972,19 @@ def nominal_analysis(sample):
         crosstab.sort_index(inplace = True)
         
         crosstabs = pd.concat([crosstabs, crosstab])
+    
+    def document_title(sample, name):
 
-    print(crosstabs)
+        if sample.one.weight == sample.two.weight:
+           weights = sample.one.weight
+        else:
+            weights = sample.one.weight + sample.two.weight
+        
+        return " - ".join(["Tables", "Nominal", name, weights])
+    
+    document_title(sample, name)
+
+    write_excel(crosstabs, name, sample.name)
 
 def analysis(file):
 
@@ -986,8 +993,8 @@ def analysis(file):
    values, metadata = pyreadstat.read_sav(file, apply_value_formats = False)
    labels = pyreadstat.read_sav(file, apply_value_formats = True)[0]
 
-   values['Overall'] = np.nan
-   labels['Overall'] = np.nan
+   values['Overall'] = 1
+   labels['Overall'] = "Total"
 
    for combination in list(combinations(list(product(values["Group"].unique(), values["Time"].unique())), 2)):
         
