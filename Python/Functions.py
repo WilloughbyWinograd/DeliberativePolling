@@ -48,35 +48,25 @@ def create_crosstab(data, index, columns, weight):
 
     return combined_frequencies
 
-def test_chi(ValuetoMark, Group1, Group2):
+def test_chi(variable, observed, expected):
 
-    # Organizes the inputs.
-    Observed_Expected = np.column_stack((Group1, Group2))
+    observed_expected = np.column_stack((observed, expected))
 
-    # Removes all zero categories.
-    Observed_Expected = Observed_Expected[~np.apply_along_axis(lambda y: np.all(y == 0), 1, Observed_Expected)]
+    observed_expected = observed_expected[~np.apply_along_axis(lambda y: np.all(y == 0), 1, observed_expected)]
 
     # Performs a chi-squared test and gets the p-value.
-    _, PValue, _, _ = chi2_contingency(Observed_Expected, simulate_p_value=False)
+    _, P, _, _ = chi2_contingency(observed_expected)
 
-    if not np.isnan(PValue):
-        # If specified, always adds p-values.
-        if not Only_Significant:
-            # Adds p-values
-            ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
+    if not np.isnan(P):
+        
+        if np.any(expected < 5):
+            return f"{variable} (P={P:.3f}) Warning: P-value may be incorrect because at least one expected value is less than 5."
+        else:
+            return f"{variable} (P={P:.3f})"
+    
+    return variable
 
-        # If specified, only adds p-values less than or equal to alpha specified.
-        if Only_Significant and PValue <= Alpha:
-            # Adds p-values
-            ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
-
-        # If a warning is generated due to an expected number less than 5, a note is added to the p-value.
-        if np.any(Group2 < 5):
-            ValuetoMark = f"{ValuetoMark} [Warning: P-value may be incorrect, as at least one expected value is less than 5.]"
-
-    return ValuetoMark
-
-def test_t(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired):
+def test_t(variable, Group1, Group2, Weight1, Weight2, Paired):
 
     # Unlists data
     Group1 = np.array(Group1).flatten()
@@ -102,6 +92,10 @@ def test_t(ValuetoMark, Group1, Group2, Weight1, Weight2, Paired):
         ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
 
     return ValuetoMark
+
+def sample_size(variable, sample):
+
+    return f"{variable} (n={len(sample)})"
 
 def write_excel(Crosstabs, Outputs, File_Name, Name_Group):
 
@@ -950,10 +944,19 @@ def nominal_crosstab(sample, nominal_variable):
         columns = "Overall",
         weight = sample.two.weight)
     
-    sample.one.crosstab.columns = [sample.one.name]
-    sample.two.crosstab.columns = [sample.two.name]
-    
     crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab], axis=1)
+    
+    crosstab = crosstab.reset_index()
+    crosstab.insert(0, 'Category', np.nan)
+    crosstab.columns = ["Category",
+                        "Group",
+                        sample_size(sample.one.name, sample.one.values[nominal_variable]),
+                        sample_size(sample.two.name, sample.two.values[nominal_variable])]
+
+    crosstab.loc[0, 'Category'] = test_chi(
+        variable = sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],
+        observed = sample.one.values[nominal_variable].value_counts().reset_index()["count"],
+        expected = sample.two.values[nominal_variable].value_counts().reset_index()["count"])
 
     return crosstab
 
@@ -967,14 +970,17 @@ def nominal_analysis(sample):
 
     for nominal_variable in nominal_variables:
 
-        crosstabs = pd.concat([crosstabs, nominal_crosstab(sample, nominal_variable)])
+        crosstab = nominal_crosstab(sample, nominal_variable)
+        crosstab.loc[-1] = [pd.NA] * len(crosstab.columns)
+        crosstab.index += 1
+        crosstab.sort_index(inplace = True)
         
-        crosstabs.loc[len(crosstabs)] = np.nan # Add spacer
+        crosstabs = pd.concat([crosstabs, crosstab])
 
-    return crosstabs
+    print(crosstabs)
 
 def analysis(file):
-   
+
    file = "Python/Dataset (Short).sav" ### FOR TESTING ###
 
    values, metadata = pyreadstat.read_sav(file, apply_value_formats = False)
@@ -985,7 +991,7 @@ def analysis(file):
 
    for combination in list(combinations(list(product(values["Group"].unique(), values["Time"].unique())), 2)):
         
-        combination = (('Treatment', 'T1'), ('Control', 'T2')) ### FOR TESTING ###
+       ### combination = (('Treatment', 'T1'), ('Control', 'T2')) ### FOR TESTING ###
 
         class sample:
             one = subsample(combination[0][0], combination[0][1], "weight_a") # Add multiweight support
@@ -997,3 +1003,5 @@ def analysis(file):
         #ordinal_analysis(sample)
 
    print("Analysis complete.")
+
+analysis("Python/Dataset (Short).sav")
