@@ -19,16 +19,16 @@ class group:
         self.time = time
         self.name = f"{group} at {time}"
         self.weight = weight
-        self.data = pd.read_excel(file, sheet_name = self.name, header = 0, dtype = "float")
+        self.data = pd.read_excel(file, sheet_name = self.name, header = 0, dtype = "float").assign(Overall = 1)
 
 def comparison_name(sample1, sample2):
 
-    if sample1.name == sample2.name:
-        return f"{sample1.name} at {sample1.time} v. {sample2.time}"
+    if sample1.group == sample2.group:
+        return f"{sample1.group} at {sample1.time} v. {sample2.time}"
     elif sample1.time == sample2.time:
-        return f"{sample1.name} v. {sample2.name} at {sample1.time}"
+        return f"{sample1.group} v. {sample2.group} at {sample1.time}"
     else:
-        return f"{sample1.name} at {sample1.time} v. {sample2.name} at {sample2.time}"
+        return f"{sample1.group} at {sample1.time} v. {sample2.group} at {sample2.time}"
 
 def text_responses(Responses, ColumnName, Codebook):
 
@@ -453,7 +453,7 @@ def write_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_T
             document.save(file_path)
             print(f"Exported: {file_name}")
 
-def ordinal(sample):
+def ordinal_analysis(sample):
 
     Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
     Dataset_Group1 = sample.one.data
@@ -1007,70 +1007,41 @@ def ordinal(sample):
         lambda x: str(x).replace("matrix.data.....nrow...1..ncol...1.", "").replace("NaN%", "").replace("NaN", "").replace(
             "NA%", "").replace("9999", "").replace("Spacer", "").replace("In.the.middle", "In the middle"))
 
-def nominal(sample):
+def nominal_crosstab(sample, nominal_column):
 
-    Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
-    sample.one.data = sample.one.data
-    sample.two.data = sample.two.data
-    Name_Group1 = sample.one.name
-    Name_Group2 = sample.two.name
-    Name_Group = sample.name = comparison_name(sample1, sample2)
-    Group1 = sample.one.group
-    Group2 = sample.two.group
-    Time1 = sample.one.time
-    Time2 = sample.two.group
-    Weight1 = sample.one.weight
-    Weight2 = sample.two.weight
+    nominal_column = sample.codebook.columns[sample.codebook.iloc[0] == 'Nominal'][0] ### FOR TESTING ###
+
+    absolute_frequencies = pd.crosstab(
+        index = nominal,
+        columns = 1,
+        values = weights,
+        aggfunc = 'sum')
+
+    relative_frequencies = (absolute_frequencies / absolute_frequencies.sum().sum() * 100).round(1)
     
-    # Adds overall column to codebook
-    Overall = Codebook.iloc[:, 0].to_frame()
-    Overall[:] = np.nan
-    Overall.iloc[0] = "Other"
-    Overall.columns = ['Overall']
-    Codebook = pd.concat([Codebook, Overall], axis = 1)
-    
-    # Organizes the codebook by column value type (opinions, demographics, etc.)
-    Codebook = Codebook.loc[:, Codebook.iloc[0].sort_values().index]
-
-    # Adds overall column to group data
-    sample.one.data = sample.one.data.assign(Overall = 1)
-    sample.two.data = sample.two.data.assign(Overall = 1)
-
-    # Gets the column number of the first and last demographic and questions.
-    Nominal = np.where(Codebook.iloc[0] == "Nominal")[0]
-    Ordinal = np.where(Codebook.iloc[0] == "Ordinal")[0]
+    relative_frequencies.apply(lambda x: x).applymap(lambda x: f"({x}%)") + ' ' + absolute_frequencies.astype(int).astype(str)
 
 
+
+    sample.one.crosstab
+
+    percentages.applymap(lambda x: f"{x}%")
+
+
+
+
+
+
+
+    return crosstab
+
+def nominal_analysis(sample):
     
-    # Combines the group crosstabs into one crosstab
-    Crosstab = pd.concat([Crosstab_Group1, Crosstab_Group2], axis=1)
+    crosstabs = pd.DataFrame()
     
-    # Creates spacers
-    VerticalSpacer1 = pd.DataFrame(9999, index=Crosstab.index, columns=["Spacer"])
-    VerticalSpacer2 = pd.DataFrame(9999, index=Crosstab.index, columns=["Spacer"])
-    
-    # Performs a chi-squared test if possible and adds data to crosstabs
-    total_freqs = Frequencies_Group1[0] + Frequencies_Group2[0]
-    if np.sum(total_freqs) > 0:
-        Demographic_Category = Test_Chi_Squared(Demographic_Category, Frequencies_Group1[0], Frequencies_Group2[0])
-    
-    # Adds demographic number to crosstab
-    VerticalSpacer1.iloc[0, 0] = Demographic_Category
-    
-    # Adds rownames to spacer
-    VerticalSpacer2["Spacer"] = Crosstab.index
-    
-    # Creates a vertical header and adds it to the crosstab
-    VerticalHeader = pd.concat([VerticalSpacer1, VerticalSpacer2], axis=1)
-    VerticalHeader.columns = ["Category", "Group"]
-    Crosstab = pd.concat([VerticalHeader, Crosstab], axis=1)
-    
-    # Creates a spacer to divide crosstabs
-    HorizontalSpacer = pd.DataFrame(9999, columns=Crosstab.columns)
-    Crosstab = pd.concat([HorizontalSpacer, Crosstab], axis=0)
-    
-    # Adds crosstab to dataframe containing all crosstabs
-    Crosstabs = Crosstab
+    for nominal_column in sample.codebook.columns[sample.codebook.iloc[0] == 'Nominal']:
+        for ordinal_column in sample.codebook.columns[sample.codebook.iloc[0] == 'Ordinal']:
+            crosstabs.append(nominal_crosstab(sample, nominal_column, ordinal_column))
     
     # Adds the header of the crosstabs to the dataframe as entries
     Header = Crosstabs.columns
@@ -1123,17 +1094,16 @@ def nominal(sample):
 
 def analysis(file):
     
-    file = "Python/Dataset.xlsx"
+    file = "Python/Dataset.xlsx" ### FOR TESTING ###
 
     class sample:
-        pass
+        one = group("Treatment", "T1", "weight_a") ### FOR TESTING ###
+        two = group("Treatment", "T2", "weight_a") ### FOR TESTING ###
+        name = comparison_name(one, two)
+        codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0).assign(Overall = np.nan)
 
-    sample.one = group("Treatment", "T1", "Weight A")
-    sample.two = group("Treatment", "T2", "Weight A")
-    sample.name = comparison_name(sample.one, sample.two)
-
-    nominal(sample)
-    ordinal(sample)
+    nominal_analysis(sample)
+    ordinal_analysis(sample)
 
     print("Analysis complete.")
 
