@@ -15,6 +15,8 @@ from docx.shared import Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from openpyxl.utils.dataframe import dataframe_to_rows
+from tqdm import tqdm
+import time
 
 class subsample:
     def __init__(self, group, time, weight):
@@ -23,7 +25,7 @@ class subsample:
         self.weight = weight
         self.name = f"{group} at {time}"
         self.values = values[(values['Group'] == group) & (values['Time'] == time)].assign(Overall = 1)
-        self.labels = labels[(values['Group'] == group) & (values['Time'] == time)].assign(Overall = 1)
+        self.labels = labels[(values['Group'] == group) & (values['Time'] == time)].assign(Overall = "Total")
 
 def comparison_name(sample1, sample2):
 
@@ -436,7 +438,7 @@ def placeholdername(sample, type):
                 sample.crosstab = nominal_crosstab(sample, nominal_variable)
             else:
                 sample.crosstab = ordinal_crosstab(sample, nominal_variable, ordinal_variable)
-
+            
             sample.crosstab.loc[-1] = [pd.NA] * len(sample.crosstab.columns)
             sample.crosstab.index += 1
             sample.crosstab.sort_index(inplace = True)
@@ -452,18 +454,15 @@ def analysis(file):
    values, metadata = pyreadstat.read_sav(file, apply_value_formats = False)
    labels = pyreadstat.read_sav(file, apply_value_formats = True)[0]
 
-   values['Overall'] = 1
-   labels['Overall'] = "Total"
-
-   for combination in list(combinations(list(product(values["Group"].unique(), values["Time"].unique())), 2)):
-
+   for combination in tqdm(list(combinations(list(product(values["Group"].unique(), values["Time"].unique())), 2))):
+        
         class sample:
             one = subsample(combination[0][0], combination[0][1], "weight_a") # Add multiweight support
             two = subsample(combination[1][0], combination[1][1], "weight_a")
             name = comparison_name(one, two)
             metadata = metadata ##.assign(Overall = np.nan)
         
-        placeholdername(sample, "Nominal")
+        placeholdername(sample, "nominal")
         #placeholdername(sample, "Ordinal")
 
    print("Analysis complete.")
