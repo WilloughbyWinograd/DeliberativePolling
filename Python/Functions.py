@@ -97,14 +97,15 @@ def sample_size(variable, sample):
 
     return f"{variable} (n={len(sample)})"
 
-def write_excel(crosstabs, name, title):
+def write_excel(sample, name):
 
     name += ".xlsx"
-
+    title = sample.name
+    
     if len(title) > 31:
         title = title[:28] + "..."
     
-    crosstabs.to_excel(name, sheet_name = title, index = False, header = True)
+    sample.crosstabs.to_excel(name, sheet_name = title, index = False, header = True)
 
     print(f"Exported: {name}")
 
@@ -949,7 +950,7 @@ def nominal_crosstab(sample, nominal_variable):
                         sample_size(sample.one.name, sample.one.values[nominal_variable]),
                         sample_size(sample.two.name, sample.two.values[nominal_variable])]
 
-    crosstab.loc[0, 'Category'] = test_chi(
+    crosstab.loc[0, 'Category'] = test_chi( # THIS IS NOT WEIGHTED ###############################
         variable = sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],
         observed = sample.one.values[nominal_variable].value_counts().reset_index()["count"],
         expected = sample.two.values[nominal_variable].value_counts().reset_index()["count"])
@@ -958,7 +959,7 @@ def nominal_crosstab(sample, nominal_variable):
 
 def nominal_analysis(sample):
     
-    crosstabs = pd.DataFrame()
+    sample.crosstabs = pd.DataFrame()
 
     sample.metadata.variable_measure.pop('Group', None)
     sample.metadata.variable_measure.pop('Time', None)
@@ -966,25 +967,23 @@ def nominal_analysis(sample):
 
     for nominal_variable in nominal_variables:
 
-        crosstab = nominal_crosstab(sample, nominal_variable)
-        crosstab.loc[-1] = [pd.NA] * len(crosstab.columns)
-        crosstab.index += 1
-        crosstab.sort_index(inplace = True)
+        sample.crosstab = nominal_crosstab(sample, nominal_variable)
+        sample.crosstab.loc[-1] = [pd.NA] * len(sample.crosstab.columns)
+        sample.crosstab.index += 1
+        sample.crosstab.sort_index(inplace = True)
         
-        crosstabs = pd.concat([crosstabs, crosstab])
+        sample.crosstabs = pd.concat([sample.crosstabs, sample.crosstab])
     
-    def document_title(sample, name):
+    def document_title(sample, kind, type):
 
         if sample.one.weight == sample.two.weight:
            weights = sample.one.weight
         else:
             weights = sample.one.weight + sample.two.weight
         
-        return " - ".join(["Tables", "Nominal", name, weights])
+        return " - ".join([kind, type, sample.name, weights])
     
-    document_title(sample, name)
-
-    write_excel(crosstabs, name, sample.name)
+    write_excel(sample, document_title(sample, "Tables", "Nominal"))
 
 def analysis(file):
 
@@ -997,8 +996,6 @@ def analysis(file):
    labels['Overall'] = "Total"
 
    for combination in list(combinations(list(product(values["Group"].unique(), values["Time"].unique())), 2)):
-        
-       ### combination = (('Treatment', 'T1'), ('Control', 'T2')) ### FOR TESTING ###
 
         class sample:
             one = subsample(combination[0][0], combination[0][1], "weight_a") # Add multiweight support
