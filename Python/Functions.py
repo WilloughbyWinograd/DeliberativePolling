@@ -97,6 +97,15 @@ def sample_size(variable, sample):
 
     return f"{variable} (n={len(sample)})"
 
+def document_title(sample, kind, type):
+
+        if sample.one.weight == sample.two.weight:
+           weights = sample.one.weight
+        else:
+            weights = sample.one.weight + sample.two.weight
+        
+        return " - ".join([kind, type, sample.name, weights])
+
 def write_excel(sample, name):
 
     name += ".xlsx"
@@ -110,6 +119,7 @@ def write_excel(sample, name):
     print(f"Exported: {name}")
 
 def write_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, Codebook):
+
     if Crosstabs.shape[1] < 14:
         File_Name = File_Name + ".docx"
         ColumnNumbers = Crosstabs.shape[1]
@@ -373,559 +383,8 @@ def write_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_T
             document.save(file_path)
             print(f"Exported: {file_name}")
 
-def ordinal_analysis(sample):
-
-    Codebook = pd.read_excel(file, sheet_name = "Codebook", header = 0)
-    Dataset_Group1 = sample.one.data
-    Dataset_Group2 = sample.two.data
-    Name_Group1 = sample.one.name
-    Name_Group2 = sample.two.name
-    Name_Group = sample.name = comparison_name(sample1, sample2)
-    Group1 = sample.one.group
-    Group2 = sample.two.group
-    Time1 = sample.one.time
-    Time2 = sample.two.group
-    Weight1 = sample.one.weight
-    Weight2 = sample.two.weight
-
-    # Order datasets based on "Identification Number" column
-    Dataset_Group1 = Dataset_Group1.sort_values(by='Identification Number')
-    Dataset_Group2 = Dataset_Group2.sort_values(by='Identification Number')
-
-    # Adds overall column to codebook
-    Overall = pd.DataFrame(columns=["Overall"])
-    Overall.loc[0] = "Nominal"
-    Codebook = pd.concat([Codebook, Overall], axis=1)
-
-    # Organizes the codebook by column value type (opinions, demographics, etc.)
-    Codebook = Codebook.reindex(columns=Codebook.loc[0].argsort())
-
-    # Adds overall column to group data
-    Dataset_Group1["Overall"] = None
-    Dataset_Group2["Overall"] = None
-
-    # Gets the column number of the first and last demographic and questions.
-    Demographics = Codebook.columns[Codebook.iloc[0] == "Nominal"]
-    Questions = Codebook.columns[Codebook.iloc[0] == "Ordinal"]
-    Demographic_Beg = Demographics[0]
-    Demographic_End = Demographics[-1]
-    Question_Beg = Questions[0]
-    Question_End = Questions[-1]
-
-    # Values to stop crosstab creation once all questions and demographics have been analyzed
-    DemographicsCounter = Demographic_Beg - 1
-    DemographicsCounter_End = Demographic_End
-
-    # Values to stop crosstab creation once all questions have been analyzed
-    QuestionsCounter_End = Question_End + 1
-
-    while True:
-    # Repeats crosstab creation if final demographic category has not been completed.
-        if DemographicsCounter == DemographicsCounter_End:
-            break
-
-    # Creates a dataset to contain crosstabs.
-    Crosstabs = pd.DataFrame()
-
-    # Counts repetitions.
-    DemographicsCounter = DemographicsCounter + 1
-
-    # Resets to the first question.
-    QuestionsCounter = Question_Beg - 1
-
-    # Repeats crosstab creation for each question.
-    while True:
-    # Counts repetitions.
-        QuestionsCounter = QuestionsCounter + 1
-    
-    # Ends crosstab creation if all questions have been analyzed.
-    if QuestionsCounter == QuestionsCounter_End:
-    # Ends repetitions.
-        break
-
-    # Gets the column number of Group 1.
-    ColumnNumber_Responses_Group1 = Dataset_Group1.columns.get_loc(Codebook[QuestionsCounter])
-
-    # Gets the column number of the demographics for Group 1.
-    ColumnNumber_Demographics_Group1 = Dataset_Group1.columns.get_loc(Codebook[DemographicsCounter])
-
-    # Gets the response data from Group 1.
-    Responses_Group1 = Dataset_Group1.iloc[:, ColumnNumber_Responses_Group1]
-
-    # Gets the demographic data for Group 1.
-    Demographics_Group1 = Dataset_Group1.iloc[:, ColumnNumber_Demographics_Group1]
-
-    # Gets numerical weights.
-    if Weight1 == "Unweighted":
-        Weight_Group1 = Dataset_Group1["Overall"].apply(lambda x: 1)
-    else:
-    # Check to see if the weights exist
-        Input_Test(Dataset_Group1, Weight1)
-
-    # Gets the weight
-        Weight_Group1 = Dataset_Group1[Weight1]
-
-    if Weight2 == "Unweighted":
-        Weight_Group2 = Dataset_Group2["Overall"].apply(lambda x: 1)
-    else:
-    # Check to see if the weights exist
-        Input_Test(Dataset_Group2, Weight2)
-
-    # Gets the weight
-        Weight_Group2 = Dataset_Group2[Weight2]
-
-    # Gets the column number of Group 2.
-    ColumnNumber_Responses_Group2 = Dataset_Group2.columns.get_loc(Codebook[QuestionsCounter])
-
-    # Gets the column number of the demographics for Group 2.
-    ColumnNumber_Demographics_Group2 = Dataset_Group2.columns.get_loc(Codebook[DemographicsCounter])
-
-    # Gets the response data from Group 2.
-    Responses_Group2 = Dataset_Group2.iloc[:, ColumnNumber_Responses_Group2]
-
-    # Gets the demographic data for Group 2.
-    Demographics_Group2 = Dataset_Group2.iloc[:, ColumnNumber_Demographics_Group2]
-
-    # Determines if the ID numbers are the same and, if they are, the data is set to paired.
-    Paired = Demographics_Group1.equals(Demographics_Group2)
-
-    if Paired:
-        Demographics_Group2 = Demographics_Group1
-
-    # Gets the name of the demographic category
-    Demographic_Category = Demographics_Group1.name
-
-    # Gets the levels for the given question.
-    Levels_Responses = Codebook.loc[4:6, Codebook.columns == Responses_Group1.name].values.flatten()
-
-    # Gets the levels for the demographic category.
-    Levels_Demographics = Codebook.loc[:, Codebook.columns == Demographic_Category].dropna().values.flatten()
-    Levels_Demographics = list(range(1, len(Levels_Demographics)))
-
-    if Levels_Demographics == [1, 0]:
-        Levels_Demographics = None
-
-    # Gets the question number for the corresponding responses.
-    QuestionNumber_Group1 = Responses_Group1.name
-    QuestionNumber_Group2 = Responses_Group2.name
-
-    # Converts responses to text.
-    Responses_Group1 = Responses_to_Text(Responses_Group1, QuestionNumber_Group1, Codebook)
-    Responses_Group2 = Responses_to_Text(Responses_Group2, QuestionNumber_Group2, Codebook)
-
-    # Generate crosstabs
-    Crosstab_Group1 = pd.crosstab(pd.Categorical(Responses_Group1, categories=Levels_Responses, ordered=True),
-                                pd.Categorical(Demographics_Group1, categories=Levels_Demographics, ordered=True),
-                                values=Weight_Group1, aggfunc='sum', normalize='index') * 100
-
-    Crosstab_Group2 = pd.crosstab(pd.Categorical(Responses_Group2, categories=Levels_Responses, ordered=True),
-                                pd.Categorical(Demographics_Group2, categories=Levels_Demographics, ordered=True),
-                                values=Weight_Group2, aggfunc='sum', normalize='index') * 100
-
-    # If all responses are NA, then the crosstab is blanked
-    if Crosstab_Group1.iloc[-1].isna().all():
-        Crosstab_Group1.iloc[-1] = None
-    if Crosstab_Group2.iloc[-1].isna().all():
-        Crosstab_Group2.iloc[-1] = None
-
-    # Gets the crosstab of the differences
-    Crosstab_Difference = Crosstab_Group2 - Crosstab_Group1
-
-    # Formats crosstabs.
-    Crosstab_Group1 = Crosstab_Group1.round(1).applymap(lambda x: f"{x}%" if not pd.isna(x) else x)
-    Crosstab_Group2 = Crosstab_Group2.round(1).applymap(lambda x: f"{x}%" if not pd.isna(x) else x)
-    Crosstab_Difference = Crosstab_Difference.round(1).applymap(lambda x: f"{x}%" if not pd.isna(x) else x)
-
-    # Adds total column to crosstabs.
-    Totals_Group1 = pd.crosstab(pd.Categorical(Responses_Group1, categories=Levels_Responses, ordered=True),
-                                pd.Categorical(['T'] * len(Responses_Group1)), values=Weight_Group1, aggfunc='sum',
-                                normalize='index') * 100
-
-    Totals_Group2 = pd.crosstab(pd.Categorical(Responses_Group2, categories=Levels_Responses, ordered=True),
-                                pd.Categorical(['T'] * len(Responses_Group2)), values=Weight_Group2, aggfunc='sum',
-                                normalize='index') * 100
-
-    # If all responses are NA, then the crosstab is blanked
-    if pd.isna(Totals_Group1.iloc[-1].values[0]):
-        Totals_Group1.iloc[-1] = None
-    if pd.isna(Totals_Group2.iloc[-1].values[0]):
-        Totals_Group2.iloc[-1] = None
-
-    # Gets the crosstab of the differences
-    Totals_Difference = Totals_Group2 - Totals_Group1
-
-    # Formats totals.
-    Totals_Group1 = pd.DataFrame(np.round(Totals_Group1, decimals=1)).applymap("{:.1f}".format)
-    Totals_Group2 = pd.DataFrame(np.round(Totals_Group2, decimals=1)).applymap("{:.1f}".format)
-    Totals_Difference = pd.DataFrame(np.round(Totals_Difference, decimals=1)).applymap("{:.1f}".format)
-
-    # Adds percentage symbol "%" to total column entries.
-    Totals_Group1 = Totals_Group1.applymap("{}%".format)
-    Totals_Group2 = Totals_Group2.applymap("{}%".format)
-    Totals_Difference = Totals_Difference.applymap("{}%".format)
-
-    # Adds total column to crosstabs.
-    Crosstab_Group1 = pd.concat([Totals_Group1, Crosstab_Group1], axis=1)
-    Crosstab_Group2 = pd.concat([Totals_Group2, Crosstab_Group2], axis=1)
-    Crosstab_Difference = pd.concat([Totals_Difference, Crosstab_Difference], axis=1)
-
-    # Replaces "." with spaces.
-    Crosstab_Difference.index = Crosstab_Difference.index.str.replace(".", " ")
-    Crosstab_Difference.columns = Crosstab_Difference.columns.str.replace(".", " ")
-
-    # Ensures the number of rows of the crosstabs is 4.
-    NumberofRowsis4 = True
-    if Crosstab_Group1.shape[0] == 3:
-        Spacer = pd.DataFrame(np.full((1, Crosstab_Group1.shape[1]), 9999))
-        Spacer.index = [9999]
-        Spacer.columns = Crosstab_Group1.columns
-        Crosstab_Group1 = pd.concat([Crosstab_Group1, Spacer])
-        Crosstab_Group2 = pd.concat([Crosstab_Group2, Spacer])
-        Crosstab_Difference = pd.concat([Crosstab_Difference, Spacer])
-        NumberofRowsis4 = False
-
-    # Adds a spacer between the crosstabs for both groups.
-    Spacer = pd.Series([9999, 9999, 9999, 9999])
-    Crosstab_Proportions = pd.concat([Crosstab_Group1, Spacer, Crosstab_Group2, Spacer, Crosstab_Difference], axis=1)
-
-    # Creates spacers to fill in with means and no opinion data.
-    Spacer = pd.DataFrame([[9999]], columns=[None])
-    Means_Group1 = Means_Group2 = Means_Difference = NoOpinions_Group1 = NoOpinions_Group2 = NoOpinions_Difference = pd.DataFrame(
-        np.full((1, Crosstab_Group1.shape[1]), 9999),
-        columns=Crosstab_Group1.columns
-    )
-
-    # Gets the numeric response data.
-    Responses_Group1 = Dataset_Group1[QuestionNumber_Group1]
-    Responses_Group2 = Dataset_Group2[QuestionNumber_Group2]
-
-    # Gets the weighted NA raw percentage.
-    Responses_Group_NA1 = Responses_Group1.copy()
-    Responses_Group_NA2 = Responses_Group2.copy()
-
-    # TRUE if responses are all NAs, indicating no responses for the given prompt.
-    AllNAs_1 = Responses_Group_NA1.isna().all().all()
-    AllNAs_2 = Responses_Group_NA2.isna().all().all()
-
-    # Gets the percentage of responses that were NA.
-    if AllNAs_1:
-        NoOpinion_Group1 = "NaN"
-    elif not Responses_Group_NA1.isna().any().any():
-        NoOpinion_Group1 = 0
-    else:
-        Responses_Group_NA1[Responses_Group_NA1.isna()] = -99
-        if Responses_Group_NA1.size == 1:
-            NoOpinion_Group1 = 100
-        else:
-            svytable_data = pd.DataFrame({'Responses': Responses_Group_NA1.unstack(), 'Weights': Weight_Group1.unstack()})
-            NoOpinion_Group1 = 100 * \
-                            (svytable_data.groupby('Responses')['Weights'].sum() / svytable_data['Weights'].sum()).loc[
-                                -99]
-
-    if AllNAs_2:
-        NoOpinion_Group2 = "NaN"
-    elif not Responses_Group_NA2.isna().any().any():
-        NoOpinion_Group2 = 0
-    else:
-        Responses_Group_NA2[Responses_Group_NA2.isna()] = -99
-        if Responses_Group_NA2.size == 1:
-            NoOpinion_Group2 = 100
-        else:
-            svytable_data = pd.DataFrame({'Responses': Responses_Group_NA2.unstack(), 'Weights': Weight_Group2.unstack()})
-            NoOpinion_Group2 = 100 * \
-                            (svytable_data.groupby('Responses')['Weights'].sum() / svytable_data['Weights'].sum()).loc[
-                                -99]
-
-    if AllNAs_1 or AllNAs_2:
-        NoOpinion_Difference = "NaN"
-    else:
-        NoOpinion_Difference = NoOpinion_Group2 - NoOpinion_Group1
-        NoOpinion_Difference = "{:.1f}".format(round(NoOpinion_Difference, 1))
-
-    if not AllNAs_1:
-        NoOpinion_Group1 = "{:.1f}".format(round(NoOpinion_Group1, 1))
-
-    if not AllNAs_2:
-        NoOpinion_Group2 = "{:.1f}".format(round(NoOpinion_Group2, 1))
-
-    # If data is paired, removes NAs.
-    if Paired and not AllNAs_1 and not AllNAs_2:
-    # Removes entries for which there are missing responses in either groups.
-        Responses_Group1_2 = pd.concat([Responses_Group1, Responses_Group2, Weight_Group1, Weight_Group2], axis=1)
-        Responses_Group1_2.dropna(inplace=True)
-
-    # Inserts formatted data.
-    Responses_Group1 = Responses_Group1_2.iloc[:, 0]
-    Responses_Group2 = Responses_Group1_2.iloc[:, 1]
-    Weight_Group1 = Responses_Group1_2.iloc[:, 2]
-    Weight_Group2 = Responses_Group1_2.iloc[:, 3]
-
-    # Unlists response data.
-    Responses_Group1 = Responses_Group1.values.flatten()
-    Responses_Group2 = Responses_Group2.values.flatten()
-
-    # Gets the means of the response data.
-    Mean_Group1 = round(np.average(Responses_Group1, weights=Weight_Group1, nan_policy='omit'), 3)
-    Mean_Group2 = round(np.average(Responses_Group2, weights=Weight_Group2, nan_policy='omit'), 3)
-    Mean_Difference = round(Mean_Group2 - Mean_Group1, 3)
-
-    # Performs a t-test if possible and adds data to crosstabs.
-    # (Assuming Test_T is a custom function for performing t-test)
-    Mean_Difference = Test_T(Mean_Difference, Responses_Group1, Responses_Group2, Weight_Group1, Weight_Group2, Paired)
-
-    # Adds the no opinion data to the dataframe.
-    NoOpinions_Group1[0] = str(NoOpinion_Group1)
-    NoOpinions_Group2[0] = str(NoOpinion_Group2)
-    NoOpinions_Difference[0] = str(NoOpinion_Difference)
-
-    # Adds percentage symbol "%" to no opinion entries.
-    NoOpinions_Group1[0] = NoOpinions_Group1[0] + "%"
-    NoOpinions_Group2[0] = NoOpinions_Group2[0] + "%"
-    NoOpinions_Difference[0] = NoOpinions_Difference[0] + "%"
-
-    # Adds the mean data to the dataframe.
-    Means_Group1[0] = str(Mean_Group1)
-    Means_Group2[0] = str(Mean_Group2)
-    Means_Difference[0] = str(Mean_Difference)
-
-    # Repeats creation of means and no opinion data for each demographic category.
-    CategoryCounter_End = len(Crosstab_Group1.columns)
-    CategoryCounter = 0
-    while CategoryCounter < CategoryCounter_End:
-        CategoryCounter += 1
-        if CategoryCounter > CategoryCounter_End:
-            break
-        count1001 = CategoryCounter
-
-    # Extracts demographic category.
-        Category = Crosstab_Group1.columns[count1001]
-        if Category == "T":
-            Category = Crosstab_Group1.columns[count1001 + 1]
-
-    # Gets responses within each demographic category.
-    Selections_Group1 = Dataset_Group1[Dataset_Group1[Demographics_Group1].eq(Category).any(axis=1)]
-    Selections_Group2 = Dataset_Group2[Dataset_Group2[Demographics_Group2].eq(Category).any(axis=1)]
-    Responses_Group1 = Selections_Group1[QuestionNumber_Group1].values
-    Responses_Group2 = Selections_Group2[QuestionNumber_Group2].values
-
-    # Gets numerical weights.
-    if len(Responses_Group1) > 0:
-        if Weight1 == "Unweighted":
-            Weight_Group1 = Selections_Group1["Overall"]
-            Weight_Group1 = 1
-        elif Weight1 != "Unweighted":
-            Weight_Group1 = Selections_Group1[Weight1].values
-        else:
-            Weight_Group1 = Responses_Group1
-
-    if len(Responses_Group2) > 0:
-        if Weight2 == "Unweighted":
-            Weight_Group2 = Selections_Group2["Overall"]
-            Weight_Group2 = 1
-        elif Weight2 != "Unweighted":
-            Weight_Group2 = Selections_Group2[Weight2].values
-        else:
-            Weight_Group2 = Responses_Group2
-
-    # TRUE if responses are all NAs (indicating respondents weren't surveyed).
-    AllNAs_1 = np.all(pd.isna(Responses_Group1))
-    AllNAs_2 = np.all(pd.isna(Responses_Group2))
-
-    # Gets the weighted NA raw percentage.
-    Responses_Group_NA1 = Responses_Group1.copy()
-    Responses_Group_NA2 = Responses_Group2.copy()
-
-    # TRUE if responses are all NAs, indicating no responses for the given prompt.
-    AllNAs_1 = np.all(pd.isna(Responses_Group_NA1))
-    AllNAs_2 = np.all(pd.isna(Responses_Group_NA2))
-
-    # Gets the percentage of responses that were NA.
-    # Gets the percentage of responses that were NA for group 1.
-    if AllNAs_1:
-        NoOpinion_Group1 = "NaN"
-    elif not np.any(pd.isna(Responses_Group_NA1)):
-        NoOpinion_Group1 = 0
-    else:
-        Responses_Group_NA1[pd.isna(Responses_Group_NA1)] = -99
-    if len(Responses_Group_NA1) == 1:
-        NoOpinion_Group1 = 100
-    else:
-        svytable_data = pd.DataFrame({'Responses': Responses_Group_NA1, 'Weights': Weight_Group1})
-    NoOpinion_Group1 = 100 * (svytable_data.groupby('Responses')['Weights'].sum() / svytable_data['Weights'].sum()).loc[-99]
-
-    # Gets the percentage of responses that were NA for group 2.
-    if AllNAs_2:
-        NoOpinion_Group2 = "NaN"
-    elif not np.any(pd.isna(Responses_Group_NA2)):
-        NoOpinion_Group2 = 0
-    else:
-    Responses_Group_NA2[pd.isna(Responses_Group_NA2)] = -99
-    if len(Responses_Group_NA2) == 1:
-        NoOpinion_Group2 = 100
-    else:
-        svytable_data = pd.DataFrame({'Responses': Responses_Group_NA2, 'Weights': Weight_Group2})
-    NoOpinion_Group2 = 100 * (svytable_data.groupby('Responses')['Weights'].sum() / svytable_data['Weights'].sum()).loc[-99]
-
-    # Gets the percentage of responses that were NA for the difference between group 1 and 2.
-    if AllNAs_1 or AllNAs_2:
-        NoOpinion_Difference = "NaN"
-    else:
-        NoOpinion_Difference = NoOpinion_Group2 - NoOpinion_Group1
-    NoOpinion_Difference = "{:.1f}".format(round(NoOpinion_Difference, 1))
-
-
-    # Define a function to format the mean and no opinion values
-    def format_values(value):
-        return "{:.3f}".format(round(value, 3))
-
-
-    # If data is paired, remove NAs.
-    if Paired and not AllNAs_1 and not AllNAs_2:
-    # Removes entries for which there are missing responses in either groups.
-    Responses_Group1_2 = pd.concat([Responses_Group1, Responses_Group2, Weight_Group1, Weight_Group2], axis=1)
-    Responses_Group1_2 = Responses_Group1_2.dropna()
-
-    # Inserts formatted data.
-    Responses_Group1 = Responses_Group1_2.iloc[:, 0]
-    Responses_Group2 = Responses_Group1_2.iloc[:, 1]
-    Weight_Group1 = Responses_Group1_2.iloc[:, 2]
-    Weight_Group2 = Responses_Group1_2.iloc[:, 3]
-
-    # Unlists response data.
-    Responses_Group1 = Responses_Group1.values.flatten()
-    Responses_Group2 = Responses_Group2.values.flatten()
-
-    # Gets the means of the response data.
-    Mean_Group1 = format_values(np.average(Responses_Group1, weights=Weight_Group1, axis=0, nan_policy='omit'))
-    Mean_Group2 = format_values(np.average(Responses_Group2, weights=Weight_Group2, axis=0, nan_policy='omit'))
-    Mean_Difference = format_values(np.average(Responses_Group2, weights=Weight_Group2, axis=0, nan_policy='omit') -
-                                    np.average(Responses_Group1, weights=Weight_Group1, axis=0, nan_policy='omit'))
-
-    # Performs a t-test if possible and adds data to crosstabs.
-    Mean_Difference = Test_T(Mean_Difference, Responses_Group1, Responses_Group2, Weight_Group1, Weight_Group2, Paired)
-
-    # Adds the no opinion data to dataframe.
-    NoOpinions_Group1[count1001] = str(NoOpinion_Group1)
-    NoOpinions_Group2[count1001] = str(NoOpinion_Group2)
-    NoOpinions_Difference[count1001] = str(NoOpinion_Difference)
-
-    # Adds percentage symbol "%" to no opinion entries.
-    NoOpinionPercentageAdder = pd.DataFrame(np.full((1, 1), ""), columns=["Percentage"])
-    NoOpinions_Group1[count1001] = NoOpinions_Group1[count1001] + "%"
-    NoOpinions_Group2[count1001] = NoOpinions_Group2[count1001] + "%"
-    NoOpinions_Difference[count1001] = NoOpinions_Difference[count1001] + "%"
-
-    # Adds the mean data to the dataframe.
-    Means_Group1[count1001] = str(Mean_Group1)
-    Means_Group2[count1001] = str(Mean_Group2)
-    Means_Difference[count1001] = str(Mean_Difference)
-
-    # Combine means and no opinion data.
-    Crosstab_Means = pd.concat([Means_Group1, Spacer, Means_Group2, Spacer, Means_Difference], axis=1)
-    Crosstab_NoOpinions = pd.concat([NoOpinions_Group1, Spacer, NoOpinions_Group2, Spacer, NoOpinions_Difference], axis=1)
-
-    # Combine crosstab with means and no opinion.
-    Crosstab_Means.columns = Crosstab_NoOpinions.columns = Crosstab_Means.columns
-    Crosstab = pd.concat([Crosstab_Means, Crosstab_Proportions])
-
-    # Add header to crosstab.
-    Crosstab = pd.concat([RowHeaders, Crosstab], axis=1)
-
-    # Add spacer for between different crosstabs.
-    Spacer = pd.DataFrame(np.full((1, Crosstab.shape[1]), 9999), columns=Crosstab.columns)
-
-    # Remove unnecessary row.
-    if not NumberofRowsis4:
-        Crosstab.iloc[3, 1] = Crosstab.iloc[4, 1]
-    Crosstab = Crosstab.drop(4)
-
-    # Remove non-means and add mean statistics if specified.
-    if Only_Means:
-        Crosstab = Crosstab.drop([1, 2], axis=0)
-    Spacer = pd.DataFrame()
-
-    # Combine crosstabs to one dataframe.
-    Crosstabs = pd.concat([Crosstabs, Spacer, Crosstab])
-
-    # Function to calculate sample sizes
-    def calculate_sample_sizes(responses):
-        return len(responses)
-
-
-    def replicate_code_in_python():
-        for break_indicator in Break_Indicator:
-            if break_indicator:
-            break
-
-
-    # Adds crosstab headers to the dataframe
-    ColumnHeaders = list(Crosstabs.columns)
-    Crosstabs = pd.concat([pd.DataFrame([ColumnHeaders]), Crosstabs], ignore_index=True)
-
-    # Adds sample size statistics
-    SampleSizes_Group1 = pd.DataFrame([[9999] * (len(Crosstab_Group1) - 1)], columns=Crosstab_Group1[:-1])
-    SampleSizes_Group2 = pd.DataFrame([[9999] * (len(Crosstab_Group2) - 1)], columns=Crosstab_Group2[:-1])
-
-    CategoryCounter_End = len(Crosstab_Group1)
-    for count1001 in range(1, CategoryCounter_End):
-        Category = Crosstab_Group1[count1001]
-    if Category == "T":
-        Category = Crosstab_Group1[count1001 + 1]
-
-    Selections_Group1 = Dataset_Group1[Dataset_Group1[Demographics_Group1].str.match("^" + Category + "$")]
-    Selections_Group2 = Dataset_Group2[Dataset_Group2[Demographics_Group2].str.match("^" + Category + "$")]
-    Responses_Group1 = Selections_Group1[QuestionNumber_Group1]
-    Responses_Group2 = Selections_Group2[QuestionNumber_Group2]
-
-    SampleSizeNotation = "n = "
-    SampleSize_Group1 = calculate_sample_sizes(Responses_Group1)
-    SampleSize_Group2 = calculate_sample_sizes(Responses_Group2)
-
-    SampleSizes_Group1[count1001 - 1] = SampleSizeNotation + str(SampleSize_Group1)
-    SampleSizes_Group2[count1001 - 1] = SampleSizeNotation + str(SampleSize_Group2)
-
-    SampleSizeNotation = "n = "
-    SampleSize_Group1 = calculate_sample_sizes(Dataset_Group1)
-    SampleSize_Group2 = calculate_sample_sizes(Dataset_Group2)
-
-    TotalSize_Group1 = SampleSizeNotation + str(SampleSize_Group1)
-    TotalSize_Group2 = SampleSizeNotation + str(SampleSize_Group2)
-
-    Spacer_1 = pd.DataFrame([[9999, 9999]], columns=["Spacer", "Spacer"])
-    Spacer_2 = pd.DataFrame([[9999]], columns=["Spacer"])
-    SampleSizes = pd.concat(
-        [Spacer_1, TotalSize_Group1, SampleSizes_Group1, Spacer_2, TotalSize_Group2, SampleSizes_Group2], axis=1)
-    Spacer_3 = pd.DataFrame([[9999] * (len(Crosstabs.columns) - len(SampleSizes.columns))])
-    SampleSizes = pd.concat([SampleSizes, Spacer_3], ignore_index=True)
-    Spacer = pd.DataFrame([[9999] * len(Crosstabs.columns)])
-    SampleSizes.columns = Crosstabs.columns
-    Spacer.columns = Crosstabs.columns
-    Crosstabs = pd.concat([SampleSizes, Spacer, Crosstabs], ignore_index=True)
-
-    # Creates a header dataframe
-    ColumnHeaders = pd.DataFrame([[9999] * len(Crosstabs.columns)], columns=Crosstabs.columns)
-
-    ColumnHeaders.at[0, Crosstab_Group1[2]] = Name_Group1
-    ColumnHeaders.at[0, Crosstab_Group1[3] + 1 * len(Crosstab_Group1)] = Name_Group2
-    ColumnHeaders.at[0, Crosstab_Group1[4] + 2 * len(Crosstab_Group1)] = "Difference"
-
-    Crosstabs = pd.concat([ColumnHeaders, Crosstabs], ignore_index=True)
-
-    # Creates the name and title of the files
-    if Weight1 == Weight2:
-        Weights = Weight1
-    else:
-        Weights = Weight1 + " and " + Weight2
-
-    File_Name = "Tables_Ordinal_" + Name_Group + "_" + Weights + "_" + Demographic_Category
-    Document_Title = (Name_Group + ", Weighted by " + Weights + " " + Demographic_Category).replace(" by Overall",
-                                                                                                    "").replace(
-        "Weighted by Unweighted", "Unweighted")
-
-    # Removes markers
-    Crosstabs = Crosstabs.applymap(
-        lambda x: str(x).replace("matrix.data.....nrow...1..ncol...1.", "").replace("NaN%", "").replace("NaN", "").replace(
-            "NA%", "").replace("9999", "").replace("Spacer", "").replace("In.the.middle", "In the middle"))
+def ordinal_crosstab(sample, nominal_variable, ordinal_variables):
+    return sample
 
 def nominal_crosstab(sample, nominal_variable):
 
@@ -941,49 +400,50 @@ def nominal_crosstab(sample, nominal_variable):
         columns = "Overall",
         weight = sample.two.weight)
     
-    crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab], axis=1)
+    sample.crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab], axis=1)
     
-    crosstab = crosstab.reset_index()
-    crosstab.insert(0, 'Category', np.nan)
-    crosstab.columns = ["Category",
+    sample.crosstab = sample.crosstab.reset_index()
+    sample.crosstab.insert(0, 'Category', np.nan)
+    sample.crosstab.columns = ["Category",
                         "Group",
                         sample_size(sample.one.name, sample.one.values[nominal_variable]),
                         sample_size(sample.two.name, sample.two.values[nominal_variable])]
 
-    crosstab.loc[0, 'Category'] = test_chi( # THIS IS NOT WEIGHTED ###############################
+    sample.crosstab.loc[0, 'Category'] = test_chi(
         variable = sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],
-        observed = sample.one.values[nominal_variable].value_counts().reset_index()["count"],
-        expected = sample.two.values[nominal_variable].value_counts().reset_index()["count"])
+        observed = pd.crosstab(index = sample.one.labels[nominal_variable], columns = 1, values = sample.one.labels[sample.one.weight], aggfunc = 'sum'),
+        expected = pd.crosstab(index = sample.two.labels[nominal_variable], columns = 1, values = sample.two.labels[sample.one.weight], aggfunc = 'sum'))
 
-    return crosstab
+    return sample.crosstab
 
-def nominal_analysis(sample):
-    
+def placeholdername(sample, type):
+
     sample.crosstabs = pd.DataFrame()
 
     sample.metadata.variable_measure.pop('Group', None)
     sample.metadata.variable_measure.pop('Time', None)
     nominal_variables = [key for key, measure in sample.metadata.variable_measure.items() if measure == 'nominal']
-
+    
+    if type == "nominal":
+        ordinal_variables = [1]
+    else:
+        ordinal_variables = [key for key, measure in sample.metadata.variable_measure.items() if measure == 'ordinal']
+    
     for nominal_variable in nominal_variables:
+        for ordinal_variable in ordinal_variables:
+            
+            if type == "nominal":
+                sample.crosstab = nominal_crosstab(sample, nominal_variable)
+            else:
+                sample.crosstab = ordinal_crosstab(sample, nominal_variable, ordinal_variable)
 
-        sample.crosstab = nominal_crosstab(sample, nominal_variable)
-        sample.crosstab.loc[-1] = [pd.NA] * len(sample.crosstab.columns)
-        sample.crosstab.index += 1
-        sample.crosstab.sort_index(inplace = True)
-        
-        sample.crosstabs = pd.concat([sample.crosstabs, sample.crosstab])
+            sample.crosstab.loc[-1] = [pd.NA] * len(sample.crosstab.columns)
+            sample.crosstab.index += 1
+            sample.crosstab.sort_index(inplace = True)
+            
+            sample.crosstabs = pd.concat([sample.crosstabs, sample.crosstab])
     
-    def document_title(sample, kind, type):
-
-        if sample.one.weight == sample.two.weight:
-           weights = sample.one.weight
-        else:
-            weights = sample.one.weight + sample.two.weight
-        
-        return " - ".join([kind, type, sample.name, weights])
-    
-    write_excel(sample, document_title(sample, "Tables", "Nominal"))
+    write_excel(sample, document_title(sample, "Tables", type))
 
 def analysis(file):
 
@@ -1003,8 +463,8 @@ def analysis(file):
             name = comparison_name(one, two)
             metadata = metadata ##.assign(Overall = np.nan)
         
-        nominal_analysis(sample)
-        #ordinal_analysis(sample)
+        placeholdername(sample, "Nominal")
+        #placeholdername(sample, "Ordinal")
 
    print("Analysis complete.")
 
