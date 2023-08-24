@@ -37,19 +37,25 @@ def comparison_name(sample1, sample2):
     else:
         return f"{sample1.group} at {sample1.time} v. {sample2.group} at {sample2.time}"
 
-def create_crosstab(data, index, columns, weight):
+def create_crosstab(type, data, index, columns, weight, totals):
     
     absolute_frequencies = pd.crosstab(
         index = data[index],
         columns = data[columns],
         values = data[weight],
-        aggfunc = 'sum')
+        aggfunc = 'sum',
+        margins = totals,
+        dropna = False)
     
     relative_frequencies = (absolute_frequencies / absolute_frequencies.sum().sum() * 100).round(1)
+    relative_frequencies = relative_frequencies.apply(lambda x: x).applymap(lambda x: f"({x}%)")
     
-    combined_frequencies = relative_frequencies.apply(lambda x: x).applymap(lambda x: f"({x}%)") + ' ' + absolute_frequencies.astype(int).astype(str)
+    combined_frequencies = relative_frequencies + ' ' + absolute_frequencies.astype(int).astype(str)
 
-    return combined_frequencies
+    if type == "nominal":
+        return combined_frequencies.iloc[:, ::-1]
+    else:
+        return relative_frequencies.iloc[:, ::-1]
 
 def test_chi(variable, observed, expected):
 
@@ -68,50 +74,32 @@ def test_chi(variable, observed, expected):
     
     return variable
 
-def test_t(variable, sample):
+def test_t(sample, filter, paired):
 
-    _, P, _ = statsmodels.stats.weightstats.ttest_ind(
-    x1 = sample.one.values[variable],
-    x2 = sample.two.values[variable],
-    alternative = 'two-sided',
-    usevar = 'unequal',
-    weights = (sample.one.values[sample.one.weight], sample.two.values[sample.two.weight]))
+    sample.one.filtered = sample.one.values[sample.one.labels[nominal_variable] == filter]
+    sample1 = sample.one.values[ordinal_variable]
+    sample2 = sample.two.values[ordinal_variable]
 
-    _, P, _ = statsmodels.stats.weightstats.ttost_paired(
-    x1 = sample.one.values[variable],
-    x2 = sample.two.values[variable],
-
-    x1, x2, low, upp, transform=None, weights=None)[source]
-
-    differences = sample.one.values[variable] - sample.two.values[variable]
-weights = sample.one.values[sample.one.weight]  # Assuming the same weights for both samples
-
+    if paired:
+        differences = sample.two.values[ordinal_variable] - sample.one.values[ordinal_variable]
+        weights = sample.one.values[sample.one.weight]
+    else:
+        _, P, _ = statsmodels.stats.weightstats.ttest_ind(
+        x1 = sample.one.values[ordinal_variable],
+        x2 = sample.two.values[ordinal_variable],
+        alternative = 'two-sided',
+        usevar = 'unequal',
+        weights = (sample.one.values[sample.one.weight], sample.two.values[sample.two.weight]))
     
+    mean1 = 1 ########
+    mean2 = 1 ########
+    mean_difference = 0
+    P = 0.05
 
-    # Unlists data
-    Group1 = np.array(Group1).flatten()
-    Group2 = np.array(Group2).flatten()
-    Weight1 = np.array(Weight1).flatten()
-    Weight2 = np.array(Weight2).flatten()
+    if not np.isnan(P):
+        mean_difference = f"{mean_difference} (P={P:.3f})"
     
-    # Performs a t-test if possible
-    Test_Validator = (len(Group1[~np.isnan(Group1)]) > 4) and (len(Group2[~np.isnan(Group2)]) > 4)
-    if Test_Validator:
-        if Paired:
-            if np.sum(np.isfinite(np.column_stack((Group1, Group2)))) < 3:
-                Test_Validator = False
-    
-    if Test_Validator:
-        if Paired:
-            # Gets the p-value from the t-test.
-            _, _, PValue = stats.ttest_rel(Group2 - Group1, weights=Weight1)
-        else:
-            # Gets the p-value from the t-test.
-            _, PValue = stats.ttest_ind(Group1, Group2, weights=(Weight1, Weight2), alternative='two-sided')
-        
-        ValuetoMark = f"{ValuetoMark} ({PValue:.3f})"
-
-    return ValuetoMark
+    return mean1, mean2, mean_difference
 
 def sample_size(variable, sample):
 
@@ -406,41 +394,28 @@ def ordinal_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document
 def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     
     sample.one.crosstab = create_crosstab(
+        type = "ordinal",
         data = sample.one.labels,
         index = ordinal_variable,
         columns = nominal_variable,
-        weight = sample.one.weight)
-    
-    sample.one.totals = create_crosstab(
-        data = sample.one.labels,
-        index = ordinal_variable,
-        columns = "Overall",
-        weight = sample.one.weight)
+        weight = sample.one.weight,
+        totals = True)
     
     sample.two.crosstab = create_crosstab(
+        type = "ordinal",
         data = sample.two.labels,
         index = ordinal_variable,
         columns = nominal_variable,
         weight = sample.two.weight)
     
-    sample.two.totals = create_crosstab(
-        data = sample.two.labels,
-        index = ordinal_variable,
-        columns = "Overall",
-        weight = sample.two.weight)
+    sample.dif.crosstab = sample.two.crosstab - sample.one.crosstab
     
-    sample.crosstab = pd.concat([sample.one.totals, sample.one.crosstab, sample.two.totals, sample.two.crosstab], axis=1)
-
-    sample.variables = pd.concat([sample.one.values[ordinal_variable],
-               sample.one.labels[nominal_variable],
-               sample.one.values[sample.one.weight],
-               sample.one.values[ordinal_variable],
-               sample.one.labels[nominal_variable],
-               sample.one.values[sample.one.weight]], axis=1)
+    sample.crosstab = pd.concat([sample.one.totals, sample.two.crosstab, sample.dif.crosstab], axis=1)
     
-    if sample.paired:
-        sample.variables = sample.variables.dropna()
-
+    for filter in sample.crosstab.columns:
+        mean1, mean2, mean_difference = test_t(sample, filter, paired)
+        sample.crosstab.append((mean1, mean2, mean_difference))
+    
     pd.crosstab(
         index = sample.variables[0],
         columns = sample.variables[1],
@@ -486,12 +461,14 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
 def nominal_crosstab(sample, nominal_variable):
 
     sample.one.crosstab = create_crosstab(
+        type = "nominal",
         data = sample.one.labels,
         index = nominal_variable,
         columns = "Overall",
         weight = sample.one.weight)
     
     sample.two.crosstab = create_crosstab(
+        type = "nominal",,
         data = sample.two.labels,
         index = nominal_variable,
         columns = "Overall",
@@ -562,8 +539,8 @@ def analysis(file):
             metadata = metadata ##.assign(Overall = np.nan)
             paired = combination[0][0] == combination[1][0]
         
-        analysis_tables(sample, "nominal")
-        analysis_tables(sample, "ordinal")
+        #analysis_tables(sample, "nominal")
+        #analysis_tables(sample, "ordinal")
 
    print("Analysis complete.")
 
