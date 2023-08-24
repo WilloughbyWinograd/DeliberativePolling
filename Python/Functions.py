@@ -37,25 +37,32 @@ def comparison_name(sample1, sample2):
     else:
         return f"{sample1.group} at {sample1.time} v. {sample2.group} at {sample2.time}"
 
-def create_crosstab(type, data, index, columns, weight, totals):
+def create_crosstab(type, data, index, columns, weight):
+
+    if type == "nominal":
+        margins = False
+        dropna = True
+        normalize = False
+    else:
+        margins = True
+        dropna = False
+        normalize = 'columns'
     
     absolute_frequencies = pd.crosstab(
-        index = data[index],
+        index = data[index].cat.add_categories(['DK/NA']).fillna('DK/NA'),
         columns = data[columns],
         values = data[weight],
         aggfunc = 'sum',
-        margins = totals,
-        dropna = False)
+        margins = margins,
+        dropna = dropna,
+        normalize = normalize)
     
-    relative_frequencies = (absolute_frequencies / absolute_frequencies.sum().sum() * 100).round(1)
-    relative_frequencies = relative_frequencies.apply(lambda x: x).applymap(lambda x: f"({x}%)")
-    
-    combined_frequencies = relative_frequencies + ' ' + absolute_frequencies.astype(int).astype(str)
+    combined_frequencies = (absolute_frequencies / absolute_frequencies.sum().sum() * 100).round(1).apply(lambda x: x).applymap(lambda x: f"({x}%)") + ' ' + absolute_frequencies.astype(int).astype(str)
 
     if type == "nominal":
         return combined_frequencies.iloc[:, ::-1]
     else:
-        return relative_frequencies.iloc[:, ::-1]
+        return absolute_frequencies.iloc[:, ::-1]
 
 def test_chi(variable, observed, expected):
 
@@ -398,8 +405,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
         data = sample.one.labels,
         index = ordinal_variable,
         columns = nominal_variable,
-        weight = sample.one.weight,
-        totals = True)
+        weight = sample.one.weight)
     
     sample.two.crosstab = create_crosstab(
         type = "ordinal",
@@ -408,21 +414,33 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
         columns = nominal_variable,
         weight = sample.two.weight)
     
-    sample.dif.crosstab = sample.two.crosstab - sample.one.crosstab
+    sample.crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab, sample.two.crosstab - sample.one.crosstab], axis=1)
     
-    sample.crosstab = pd.concat([sample.one.totals, sample.two.crosstab, sample.dif.crosstab], axis=1)
+    sample.crosstab = add_crosstab_means(sample) ### ERRROR HERE
     
-    for filter in sample.crosstab.columns:
-        mean1, mean2, mean_difference = test_t(sample, filter, paired)
-        sample.crosstab.append((mean1, mean2, mean_difference))
+    def add_crosstab_means(sample):
+    
+        for filter in sample.one.crosstab.columns:
+            
+            sample.means = pd.DataFrame([["NA"] * len(sample.crosstab.columns)], columns = sample.crosstab.columns)
+            
+            mean1, mean2, mean_difference = test_t(sample, filter, paired)
+            
+            crosstab_index = list(sample.one.crosstab.columns).index(filter)
+
+            sample.means[crosstab_index + 0*len(sample.one.crosstab.columns)] = mean1
+            sample.means[crosstab_index + 1*len(sample.one.crosstab.columns)] = mean2
+            sample.means[crosstab_index + 2*len(sample.one.crosstab.columns)] = mean_difference
+        
+        return pd.concat((sample.crosstab, sample.means), axis=0)
+    
+
     
     pd.crosstab(
         index = sample.variables[0],
         columns = sample.variables[1],
         values = sample.variables[2],
         aggfunc = 'sum')
-    
-
     
     sample.one.variables
 
@@ -459,7 +477,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     return sample.crosstab
 
 def nominal_crosstab(sample, nominal_variable):
-
+    
     sample.one.crosstab = create_crosstab(
         type = "nominal",
         data = sample.one.labels,
@@ -468,7 +486,7 @@ def nominal_crosstab(sample, nominal_variable):
         weight = sample.one.weight)
     
     sample.two.crosstab = create_crosstab(
-        type = "nominal",,
+        type = "nominal",
         data = sample.two.labels,
         index = nominal_variable,
         columns = "Overall",
@@ -539,7 +557,7 @@ def analysis(file):
             metadata = metadata ##.assign(Overall = np.nan)
             paired = combination[0][0] == combination[1][0]
         
-        #analysis_tables(sample, "nominal")
+        analysis_tables(sample, "nominal")
         #analysis_tables(sample, "ordinal")
 
    print("Analysis complete.")
