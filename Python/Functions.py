@@ -62,7 +62,28 @@ def create_crosstab(type, data, index, columns, weight):
     if type == "nominal":
         return combined_frequencies.iloc[:, ::-1]
     else:
-        return absolute_frequencies.iloc[:, ::-1]
+        return 100*absolute_frequencies.iloc[:, ::-1]
+
+def add_crosstab_means(sample):
+
+        sample.means = pd.DataFrame([["NA"] * len(sample.crosstab.columns)], columns = sample.crosstab.columns)
+
+        for filter in sample.one.crosstab.columns:
+            
+            mean1, mean2, mean_difference = test_t(sample, filter, paired)
+            
+            crosstab_index = list(sample.one.crosstab.columns).index(filter)
+            
+            sample.means.iloc[0, crosstab_index + 0*len(sample.one.crosstab.columns)] = mean1
+            sample.means.iloc[0, crosstab_index + 1*len(sample.one.crosstab.columns)] = mean2
+            sample.means.iloc[0, crosstab_index + 2*len(sample.one.crosstab.columns)] = mean_difference
+        
+        multi_index = pd.MultiIndex.from_product([['Level1'], sample.means.columns])
+        
+        sample.crosstab.columns = multi_index
+        sample.means.columns = multi_index
+        
+        return pd.concat((sample.means, sample.crosstab), axis=0)
 
 def test_chi(variable, observed, expected):
 
@@ -99,7 +120,7 @@ def test_t(sample, filter, paired):
         weights = (sample.one.values[sample.one.weight], sample.two.values[sample.two.weight]))
     
     mean1 = 1 ########
-    mean2 = 1 ########
+    mean2 = 2 ########
     mean_difference = 0
     P = 0.05
 
@@ -415,59 +436,16 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
         weight = sample.two.weight)
     
     sample.crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab, sample.two.crosstab - sample.one.crosstab], axis=1)
+    sample.crosstab = sample.crosstab.round(1).apply(lambda x: x).applymap(lambda x: f"{x}%")
     
-    sample.crosstab = add_crosstab_means(sample) ### ERRROR HERE
-    
-    def add_crosstab_means(sample):
-    
-        for filter in sample.one.crosstab.columns:
-            
-            sample.means = pd.DataFrame([["NA"] * len(sample.crosstab.columns)], columns = sample.crosstab.columns)
-            
-            mean1, mean2, mean_difference = test_t(sample, filter, paired)
-            
-            crosstab_index = list(sample.one.crosstab.columns).index(filter)
+    sample.crosstabs = add_crosstab_means(sample)
 
-            sample.means[crosstab_index + 0*len(sample.one.crosstab.columns)] = mean1
-            sample.means[crosstab_index + 1*len(sample.one.crosstab.columns)] = mean2
-            sample.means[crosstab_index + 2*len(sample.one.crosstab.columns)] = mean_difference
-        
-        return pd.concat((sample.crosstab, sample.means), axis=0)
-    
-
-    
-    pd.crosstab(
-        index = sample.variables[0],
-        columns = sample.variables[1],
-        values = sample.variables[2],
-        aggfunc = 'sum')
-    
-    sample.one.variables
-
-    np.average
-
-
-    np.average(sample.one.values[ordinal_variable], weights = sample.one.values[sample.one.weight])
-
-    sample.one.values[ordinal_variable].groupby(sample.one.labels[nominal_variable]).apply(weighted_mean)
-
-    def weighted_mean(group):
-        return np.average(sample.one.values[ordinal_variable], weights=sample.one.values[sample.one.weight])
-
-    sample.one.means = =
-    sample.one.values
-    sample.one.weight
-    sample.one.
-    ordinal_variable
-
-    sample.crosstab
-
-    #sample.crosstab = sample.crosstab.reset_index()
-    #sample.crosstab.insert(0, 'Variable', np.nan)
-    #sample.crosstab.columns = ["Variable",
-                        #"Prompt and Responses",
-                        #sample_size(sample.one.name, sample.one.values[nominal_variable]),
-                        #sample_size(sample.two.name, sample.two.values[nominal_variable])]
+    sample.crosstab = sample.crosstab.reset_index()
+    sample.crosstab.insert(0, 'Variable', np.nan)
+    current_columns = sample.crosstab.columns.tolist()
+    current_columns[0] = "Variable"
+    current_columns[1] = "Prompt and Responses"
+    sample.crosstab.columns = current_columns ### HERE
 
     #sample.crosstab.loc[0, 'Category'] = test_chi(
         #variable = sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],
