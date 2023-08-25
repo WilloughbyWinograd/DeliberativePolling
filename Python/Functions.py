@@ -487,25 +487,35 @@ def test_chi(variable, observed, expected):
 
 def test_t(sample, filter, nominal_variable, ordinal_variable):
 
-    sample.one.filtered = sample.one.values[sample.one.labels[nominal_variable] == filter]
-    sample1 = sample.one.values[ordinal_variable]
-    sample2 = sample.two.values[ordinal_variable]
+    if not filter == "All":
+        sample.one.filtered_ordinal = sample.one.values[sample.one.values[nominal_variable] == filter].reset_index()[ordinal_variable]
+        sample.two.filtered_ordinal = sample.two.values[sample.two.values[nominal_variable] == filter].reset_index()[ordinal_variable]
+
+        sample.one.filtered_weights = sample.one.values[sample.one.values[sample.one.weight] == filter].reset_index()[sample.one.weight]
+        sample.two.filtered_weights = sample.two.values[sample.two.values[sample.one.weight] == filter].reset_index()[sample.one.weight]
+    else:
+        sample.one.filtered_ordinal = sample.one.values.reset_index()[ordinal_variable]
+        sample.two.filtered_ordinal = sample.two.values.reset_index()[ordinal_variable]
+
+        sample.two.filtered_weights = sample.two.values.reset_index()[sample.one.weight]
+        sample.one.filtered_weights = sample.one.values.reset_index()[sample.one.weight]
 
     if sample.paired:
-        differences = sample.two.values[ordinal_variable] - sample.one.values[ordinal_variable]
-        weights = sample.one.values[sample.one.weight]
+        P = statsmodels.stats.weightstats.DescrStatsW(
+            data = sample.two.filtered_ordinal - sample.one.filtered_ordinal,
+            weights = sample.one.filtered_weights).ttest_mean(0)[1]
+
     else:
-        _, P, _ = statsmodels.stats.weightstats.ttest_ind(
-        x1 = sample.one.values[ordinal_variable],
-        x2 = sample.two.values[ordinal_variable],
-        alternative = 'two-sided',
-        usevar = 'unequal',
-        weights = (sample.one.values[sample.one.weight], sample.two.values[sample.two.weight]))
+        P = statsmodels.stats.weightstats.ttest_ind(
+            x1 = sample.one.filtered_ordinal,
+            x2 = sample.two.filtered_ordinal,
+            alternative = 'two-sided',
+            usevar = 'unequal',
+            weights = (sample.one.filtered_weights, sample.two.filtered_weights))[1]
     
-    mean1 = 1 ########
-    mean2 = 2 ########
-    mean_difference = 0
-    P = 0.05
+    mean1 =np.average(sample.one.filtered_ordinal, weights = sample.one.filtered_weights)
+    mean2 = np.average(sample.two.filtered_ordinal, weights = sample.two.filtered_weights)
+    mean_difference = mean2 - mean1
 
     if not np.isnan(P):
         mean_difference = f"{mean_difference} (P={P:.3f})"
@@ -542,6 +552,5 @@ class subsample:
         self.name = f"{group} at {time}"
         self.values = values[(values['Group'] == group) & (values['Time'] == time)].assign(Overall = 1)
         self.labels = labels[(values['Group'] == group) & (values['Time'] == time)].assign(Overall = "Total")
-
 
 analysis("Python/Dataset (Short).sav")
