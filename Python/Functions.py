@@ -4,6 +4,7 @@ import re
 import requests
 import pyreadstat
 import statsmodels
+import warnings
 from itertools import combinations
 from itertools import product
 from scipy import stats
@@ -18,13 +19,14 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from openpyxl.utils.dataframe import dataframe_to_rows
 from statsmodels.stats.weightstats import ttest_ind
+warnings.filterwarnings("ignore")
 
 def analysis(file):
 
    values, codebook = pyreadstat.read_sav(file, apply_value_formats = False)
    labels = pyreadstat.read_sav(file, apply_value_formats = True)[0]
 
-   for combination in tqdm(list(combinations(list(product(values["Group"].unique(), values["Time"].unique())), 2))):
+   for combination in (list(combinations(list(product(values["Group"].unique(), values["Time"].unique())), 2))): #tqdm
         
         class sample:
             one = subsample(combination[0][0], combination[0][1], "weight_a", values, labels) # Add multiweight support
@@ -33,8 +35,13 @@ def analysis(file):
             metadata = codebook ##.assign(Overall = np.nan)
             paired = combination[0][0] == combination[1][0]
         
-        analysis_tables(sample, "nominal")
-        analysis_tables(sample, "ordinal")
+        sample.one.values.set_index(sample.one.values["IDs"], inplace=True)
+        sample.two.values.set_index(sample.two.values["IDs"], inplace=True)
+        sample.one.labels.set_index(sample.one.values["IDs"], inplace=True)
+        sample.two.labels.set_index(sample.two.values["IDs"], inplace=True)
+        
+        analysis_tables(sample, "Nominal")
+        analysis_tables(sample, "Ordinal")
 
    print("Analysis complete.")
 
@@ -46,42 +53,56 @@ def analysis_tables(sample, type):
     sample.metadata.variable_measure.pop('Time', None)
     nominal_variables = [key for key, measure in sample.metadata.variable_measure.items() if measure == 'nominal']
     
-    if type == "nominal":
+    if type == "Nominal":
         ordinal_variables = [1]
-    else:
+    if type == "Ordinal":
         ordinal_variables = [key for key, measure in sample.metadata.variable_measure.items() if measure == 'ordinal']
     
     for nominal_variable in nominal_variables:
-        for ordinal_variable in ordinal_variables:
-            
-            if type == "nominal":
+        for ordinal_variable in reversed(ordinal_variables):
+
+            if type == "Nominal":
                 sample.crosstab = nominal_crosstab(sample, nominal_variable)
-            if type == "ordinal":
+            if type == "Ordinal":
                 sample.crosstab = ordinal_crosstab(sample, nominal_variable, ordinal_variable)
             
             sample.crosstab.loc[-1] = [pd.NA] * len(sample.crosstab.columns)
             sample.crosstab.index += 1
             sample.crosstab.sort_index(inplace = True)
-
+            
             sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
-    
-    write_excel(sample, document_title(sample, "Tables", type))
-    #write_word(sample, document_title(sample, "Tables", type)) ##########################################################################
+        
+        if type == "Ordinal":
+            
+            sample.crosstabs = sample.crosstabs.iloc[1:]
+            second_header = [""] * len(sample.crosstabs.columns)
+            second_header[2] = sample.one.name
+            second_header[int((len(sample.crosstabs.columns) - 2) / 3) + 2] = sample.two.name
+            second_header[int((len(sample.crosstabs.columns) - 2) / 3) * 2 + 2] = "Difference"
+            multi_col = pd.MultiIndex.from_tuples([(second_header[i], col) for i, col in enumerate(sample.crosstabs.columns)])
+            sample.crosstabs.columns = multi_col
+            
+            write_excel(sample, document_title(sample, "Tables", type, sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)]))
+            #write_word(sample, document_title(sample, "Tables", type, sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)]))
+            #ordinal_report(sample)
+            sample.crosstabs = pd.DataFrame()
+        
+    if type == "Nominal":
 
-    if type == "ordinal#": #remove blocker ################################################################################################
-        ordinal_report(sample)
+        write_excel(sample, document_title(sample, "Tables", type, nominal_variable))
+        #write_word(sample, document_title(sample, "Tables", type, nominal_variable))
 
 def nominal_crosstab(sample, nominal_variable):
     
     sample.one.crosstab = create_crosstab(
-        type = "nominal",
+        type = "Nominal",
         data = sample.one.labels,
         index = nominal_variable,
         columns = "Overall",
         weight = sample.one.weight)
     
     sample.two.crosstab = create_crosstab(
-        type = "nominal",
+        type = "Nominal",
         data = sample.two.labels,
         index = nominal_variable,
         columns = "Overall",
@@ -93,8 +114,8 @@ def nominal_crosstab(sample, nominal_variable):
     sample.crosstab.insert(0, 'Category', np.nan)
     sample.crosstab.columns = ["Category",
                         "Group",
-                        sample_size(sample.one.name, sample.one.values[nominal_variable]),
-                        sample_size(sample.two.name, sample.two.values[nominal_variable])]
+                        add_sample_size(sample.one.name, sample.one.values[nominal_variable]),
+                        add_sample_size(sample.two.name, sample.two.values[nominal_variable])]
 
     sample.crosstab.loc[0, 'Category'] = test_chi(
         variable = sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],
@@ -106,14 +127,14 @@ def nominal_crosstab(sample, nominal_variable):
 def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     
     sample.one.crosstab = create_crosstab(
-        type = "ordinal",
+        type = "Ordinal",
         data = sample.one.labels,
         index = ordinal_variable,
         columns = nominal_variable,
         weight = sample.one.weight)
     
     sample.two.crosstab = create_crosstab(
-        type = "ordinal",
+        type = "Ordinal",
         data = sample.two.labels,
         index = ordinal_variable,
         columns = nominal_variable,
@@ -122,17 +143,17 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     sample.crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab, sample.two.crosstab - sample.one.crosstab], axis=1)
     sample.crosstab = sample.crosstab.round(1).apply(lambda x: x).applymap(lambda x: f"{x}%")
     
-    sample.crosstab = add_crosstab_means(sample, nominal_variable, ordinal_variable)
-
+    sample.crosstab = add_crosstab_tests(sample, nominal_variable, ordinal_variable)
+    
     sample.crosstab = sample.crosstab.reset_index()
     sample.crosstab.insert(0, 'Variable', np.nan)
-    current_columns = sample.crosstab.columns.tolist()
-    current_columns[0] = "Variable"
-    current_columns[1] = "Prompt and Responses"
-    sample.crosstab.columns = current_columns
+    crosstab_header = sample.crosstab.columns.tolist()
+    crosstab_header[0] = "Variable"
+    crosstab_header[1] = "Prompt and Responses"
+    sample.crosstab.columns = crosstab_header
     sample.crosstab.iloc[0,0] = ordinal_variable
     sample.crosstab.iloc[0,1] = sample.metadata.column_labels[sample.metadata.column_names.index(ordinal_variable)]
-
+    
     return sample.crosstab
 
 def ordinal_report(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Title, Type, Demographic_Category, API_Key, Group1):
@@ -339,7 +360,9 @@ def write_excel(sample, name):
     if len(title) > 31:
         title = title[:28] + "..."
     
-    sample.crosstabs.to_excel(name, sheet_name = title, index = False, header = True)
+    sample.crosstabs.index = [pd.NA] * len(sample.crosstabs)
+
+    sample.crosstabs.to_excel(name, sheet_name = title, index = True, header = True)
 
     print(f"Exported: {name}")
 
@@ -414,7 +437,7 @@ def write_word(Crosstabs, Outputs, File_Name, Name_Group, Template, Document_Tit
 
 def create_crosstab(type, data, index, columns, weight):
 
-    if type == "nominal":
+    if type == "Nominal":
         margins = False
         dropna = True
         normalize = False
@@ -434,14 +457,14 @@ def create_crosstab(type, data, index, columns, weight):
     
     combined_frequencies = (absolute_frequencies / absolute_frequencies.sum().sum() * 100).round(1).apply(lambda x: x).applymap(lambda x: f"({x}%)") + ' ' + absolute_frequencies.astype(int).astype(str)
 
-    if type == "nominal":
+    if type == "Nominal":
         return combined_frequencies.iloc[:, ::-1]
     else:
         return 100*absolute_frequencies.iloc[:, ::-1]
 
-def add_crosstab_means(sample, nominal_variable, ordinal_variable):
+def add_crosstab_tests(sample, nominal_variable, ordinal_variable):
 
-        sample.means = pd.DataFrame([["NA"] * len(sample.crosstab.columns)], columns = sample.crosstab.columns)
+        sample.means = pd.DataFrame([[pd.NA] * len(sample.crosstab.columns)], columns = sample.crosstab.columns)
 
         for filter in sample.one.crosstab.columns:
             
@@ -452,6 +475,12 @@ def add_crosstab_means(sample, nominal_variable, ordinal_variable):
             sample.means.iloc[0, crosstab_index + 0*len(sample.one.crosstab.columns)] = mean1
             sample.means.iloc[0, crosstab_index + 1*len(sample.one.crosstab.columns)] = mean2
             sample.means.iloc[0, crosstab_index + 2*len(sample.one.crosstab.columns)] = mean_difference
+            
+            filter_samplesize = add_sample_size(filter, sample.one.values if filter == "All" else sample.one.values[sample.one.labels[nominal_variable] == filter])
+            crosstab_header = sample.crosstab.columns.tolist()
+            crosstab_header[crosstab_index + 0*len(sample.one.crosstab.columns)] = filter_samplesize
+            crosstab_header[crosstab_index + 1*len(sample.one.crosstab.columns)] = filter_samplesize
+            sample.crosstab.columns = sample.means.columns = pd.Index(crosstab_header)
         
         return combine_crosstabs(sample.means, sample.crosstab)
 
@@ -479,57 +508,75 @@ def test_chi(variable, observed, expected):
     if not np.isnan(P):
         
         if np.any(expected < 5):
-            return f"{variable} (P={P:.3f}) Warning: P-value may be incorrect because at least one expected value is less than 5."
+            return f"{variable} (P = {P:.3f}) Warning: P-value may be incorrect because at least one expected value is less than 5."
         else:
-            return f"{variable} (P={P:.3f})"
+            return f"{variable} (P = {P:.3f})"
     
     return variable
 
 def test_t(sample, filter, nominal_variable, ordinal_variable):
+    
+    sample.one.filtered = sample.one.values
+    sample.two.filtered = sample.two.values
 
     if not filter == "All":
-        sample.one.filtered_ordinal = sample.one.values[sample.one.values[nominal_variable] == filter].reset_index()[ordinal_variable]
-        sample.two.filtered_ordinal = sample.two.values[sample.two.values[nominal_variable] == filter].reset_index()[ordinal_variable]
-
-        sample.one.filtered_weights = sample.one.values[sample.one.values[sample.one.weight] == filter].reset_index()[sample.one.weight]
-        sample.two.filtered_weights = sample.two.values[sample.two.values[sample.one.weight] == filter].reset_index()[sample.one.weight]
+        sample.one.filtered = sample.one.values[sample.one.labels[nominal_variable] == filter]
+        sample.two.filtered = sample.two.values[sample.two.labels[nominal_variable] == filter]
+    
+    if sample.paired:
+        complete_cases = pd.concat((sample.one.filtered[ordinal_variable], sample.one.filtered[sample.one.weight], sample.two.filtered[ordinal_variable], sample.two.filtered[sample.two.weight]), axis = 1).dropna()
+        sample.one.ordinal_filtered = complete_cases.groupby(level=0, axis=1).nth(0)[ordinal_variable]
+        sample.one.weights_filtered = complete_cases.groupby(level=0, axis=1).nth(0)[sample.one.weight]
+        sample.two.ordinal_filtered = complete_cases.groupby(level=0, axis=1).nth(1)[ordinal_variable]
+        sample.two.weights_filtered = complete_cases.groupby(level=0, axis=1).nth(1)[sample.two.weight]
+        
     else:
-        sample.one.filtered_ordinal = sample.one.values.reset_index()[ordinal_variable]
-        sample.two.filtered_ordinal = sample.two.values.reset_index()[ordinal_variable]
+        complete_cases = pd.concat((sample.one.filtered[ordinal_variable], sample.one.filtered[sample.one.weight]), axis = 1).dropna()
+        sample.one.ordinal_filtered = complete_cases[ordinal_variable]
+        sample.one.weights_filtered = complete_cases[sample.one.weight]
 
-        sample.two.filtered_weights = sample.two.values.reset_index()[sample.one.weight]
-        sample.one.filtered_weights = sample.one.values.reset_index()[sample.one.weight]
+        complete_cases = pd.concat((sample.two.filtered[ordinal_variable], sample.two.filtered[sample.two.weight]), axis = 1).dropna()
+        sample.two.ordinal_filtered = complete_cases[ordinal_variable]
+        sample.two.weights_filtered = complete_cases[sample.two.weight]
 
     if sample.paired:
         P = statsmodels.stats.weightstats.DescrStatsW(
-            data = sample.two.filtered_ordinal - sample.one.filtered_ordinal,
-            weights = sample.one.filtered_weights).ttest_mean(0)[1]
+            data = sample.two.ordinal_filtered - sample.one.ordinal_filtered,
+            weights = sample.one.weights_filtered).ttest_mean(0)[1]
 
     else:
         P = statsmodels.stats.weightstats.ttest_ind(
-            x1 = sample.one.filtered_ordinal,
-            x2 = sample.two.filtered_ordinal,
+            x1 = sample.one.ordinal_filtered,
+            x2 = sample.two.ordinal_filtered,
             alternative = 'two-sided',
             usevar = 'unequal',
-            weights = (sample.one.filtered_weights, sample.two.filtered_weights))[1]
+            weights = (sample.one.weights_filtered, sample.two.weights_filtered))[1]
     
-    mean1 =np.average(sample.one.filtered_ordinal, weights = sample.one.filtered_weights)
-    mean2 = np.average(sample.two.filtered_ordinal, weights = sample.two.filtered_weights)
-    mean_difference = mean2 - mean1
-
+    if not sum(sample.one.weights_filtered) == 0 and not sum(sample.two.weights_filtered) == 0:
+        mean1 = np.average(sample.one.ordinal_filtered, weights = sample.one.weights_filtered)
+        mean2 = np.average(sample.two.ordinal_filtered, weights = sample.two.weights_filtered)
+        mean_difference = "{:.3f}".format(mean2 - mean1)     
+        mean1 = "{:.3f}".format(mean1)
+        mean2 = "{:.3f}".format(mean2)
+    else:
+        mean1 = mean2 = mean_difference = pd.NA
+    
     if not np.isnan(P):
-        mean_difference = f"{mean_difference} (P={P:.3f})"
+        mean_difference = f"{mean_difference} (P = {P:.3f})"
     
     return mean1, mean2, mean_difference
 
-def document_title(sample, kind, type):
+def document_title(sample, kind, type, nominal_variable):
 
         if sample.one.weight == sample.two.weight:
            weights = sample.one.weight
         else:
             weights = sample.one.weight + sample.two.weight
         
-        return " - ".join([kind.capitalize(), type, sample.name, weights])
+        if type == "Nominal":
+            return " - ".join([kind, type, sample.name, weights])
+        else:
+            return " - ".join([kind, type, sample.name, weights, nominal_variable])
 
 def comparison_name(sample1, sample2):
 
@@ -540,9 +587,9 @@ def comparison_name(sample1, sample2):
     else:
         return f"{sample1.group} at {sample1.time} v. {sample2.group} at {sample2.time}"
 
-def sample_size(variable, sample):
+def add_sample_size(variable, sample):
 
-    return f"{variable} (n={len(sample)})"
+    return f"{variable} (n = {len(sample)})"
 
 class subsample:
     def __init__(self, group, time, weight, values, labels):
