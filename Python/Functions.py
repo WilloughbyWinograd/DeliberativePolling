@@ -48,7 +48,7 @@ def analysis(file):
 def analysis_tables(sample, type):
     
     sample.crosstabs = pd.DataFrame()
-
+    
     sample.metadata.variable_measure.pop('Group', None)
     sample.metadata.variable_measure.pop('Time', None)
     nominal_variables = [key for key, measure in sample.metadata.variable_measure.items() if measure == 'nominal']
