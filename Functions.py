@@ -220,7 +220,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     return sample.crosstab
 
 
-def ordinal_report(
+def ordinal_report( ####### UNFINISHED
     Crosstabs,
     Outputs,
     File_Name,
@@ -473,7 +473,7 @@ def write_excel(sample, name):
     print(f"Exported: {name}")
 
 
-def write_word(
+def write_word( ####### UNFINISHED
     Crosstabs,
     Outputs,
     File_Name,
