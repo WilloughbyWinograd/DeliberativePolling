@@ -4,9 +4,8 @@ import re
 import requests
 import pyreadstat
 import statsmodels
-from scipy import stats
+import statsmodels.stats.weightstats
 from scipy.stats import chi2_contingency
-from statsmodels.stats.weightstats import ttest_ind
 from itertools import combinations, product
 import warnings
 from tqdm import tqdm
