@@ -2,21 +2,20 @@ import pandas as pd
 import numpy as np
 import re
 import requests
+import warnings
 import pyreadstat
 import statsmodels
 import statsmodels.stats.weightstats
 from scipy.stats import chi2_contingency
 from itertools import combinations, product
-import warnings
 from tqdm import tqdm
 from docx import Document
-from docx.shared import Pt, RGBColor
+from docx.shared import Pt, RGBColor, Inches
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from docx.enum.text import WD_UNDERLINE
-
-# from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-# from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.enum.table import WD_ALIGN_VERTICAL
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 warnings.filterwarnings("ignore")
@@ -488,13 +487,6 @@ def write_xlsx(sample, name):
     print(f"Exported: {name}")
 
 
-def set_font(cell):
-    for paragraph in cell.paragraphs:
-        for run in paragraph.runs:
-            run.font.name = "Arial"
-            run.font.size = Pt(10)
-
-
 def write_docx(sample, name):
     name += ".docx"
     title = sample.name
@@ -510,12 +502,23 @@ def write_docx(sample, name):
     sample.crosstabs.fillna("", inplace=True)
 
     rows, cols = sample.crosstabs.shape
-    table = document.add_table(rows=rows + 1, cols=cols)
+    table = document.add_table(rows=rows + 2, cols=cols)
 
     for i, column in enumerate(sample.crosstabs.columns):
         cell = table.cell(0, i)
-        cell.text = str(column)
-        set_font(cell)
+        # Clear existing paragraphs in the cell
+        for p in cell.paragraphs:
+            p.clear()
+        # Handle tuple headers
+        if isinstance(column, tuple):
+            p1 = cell.add_paragraph(str(column[0]))
+            set_font_for_paragraph(p1)
+            
+            p2 = cell.add_paragraph(str(column[1]))
+            set_font_for_paragraph(p2)
+        else:
+            p = cell.add_paragraph(str(column))
+            set_font_for_paragraph(p)
 
     for i, row in enumerate(sample.crosstabs.iterrows()):
         idx, data = row
@@ -527,7 +530,14 @@ def write_docx(sample, name):
     if sample.crosstabs.shape[1] < 5:
         print("Nominal")
     else:
-        print("Ordinal")
+        section = document.sections[0]
+        section.orientation = 1
+        section.page_width = Inches(22)
+        section.page_height = Inches(22)
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.5)
+        section.right_margin = Inches(0.5)
 
     document.save(name)
 
@@ -758,6 +768,19 @@ def comparison_name(sample1, sample2):
 
 def add_sample_size(variable, sample):
     return f"{variable} (n = {len(sample)})"
+
+
+def set_font(cell):
+    for paragraph in cell.paragraphs:
+        for run in paragraph.runs:
+            run.font.name = "Arial"
+            run.font.size = Pt(10)
+
+
+def set_font_for_paragraph(paragraph):
+    for run in paragraph.runs:
+        run.font.name = "Arial"
+        run.font.size = Pt(10)
 
 
 class subsample:
