@@ -10,15 +10,21 @@ from itertools import combinations, product
 import warnings
 from tqdm import tqdm
 from docx import Document
-from docx.shared import Pt
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.shared import Pt, RGBColor
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+from docx.enum.text import WD_UNDERLINE
+
+# from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+# from docx.enum.table import WD_ALIGN_VERTICAL
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 warnings.filterwarnings("ignore")
 
 
 def analysis(file):
+    assert file.lower().endswith(".sav"), "File must be an SPSS .SAV file."
+
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
 
@@ -105,7 +111,7 @@ def analysis_tables(sample, type):
             )
             sample.crosstabs.columns = multi_col
 
-            write_excel(
+            write_xlsx(
                 sample,
                 document_title(
                     sample,
@@ -116,13 +122,23 @@ def analysis_tables(sample, type):
                     ],
                 ),
             )
-            # write_word(sample, document_title(sample, "Tables", type, sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)]))
+            write_docx(
+                sample,
+                document_title(
+                    sample,
+                    "Tables",
+                    type,
+                    sample.metadata.column_labels[
+                        sample.metadata.column_names.index(nominal_variable)
+                    ],
+                ),
+            )
             # ordinal_report(sample)
             sample.crosstabs = pd.DataFrame()
 
     if type == "Nominal":
-        write_excel(sample, document_title(sample, "Tables", type, nominal_variable))
-        # write_word(sample, document_title(sample, "Tables", type, nominal_variable))
+        write_xlsx(sample, document_title(sample, "Tables", type, nominal_variable))
+        write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
 
 
 def nominal_crosstab(sample, nominal_variable):
@@ -219,7 +235,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     return sample.crosstab
 
 
-def ordinal_report( ####### UNFINISHED
+def ordinal_report(  ####### UNFINISHED
     Crosstabs,
     Outputs,
     File_Name,
@@ -458,7 +474,7 @@ def ordinal_report( ####### UNFINISHED
             print(f"Exported: {file_name}")
 
 
-def write_excel(sample, name):
+def write_xlsx(sample, name):
     name += ".xlsx"
     title = sample.name
 
@@ -472,85 +488,50 @@ def write_excel(sample, name):
     print(f"Exported: {name}")
 
 
-def write_word( ####### UNFINISHED
-    Crosstabs,
-    Outputs,
-    File_Name,
-    Name_Group,
-    Template,
-    Document_Title,
-    Type,
-    Demographic_Category,
-    Codebook,
-):
-    if Crosstabs.shape[1] < 14:
-        File_Name = File_Name + ".docx"
-        ColumnNumbers = Crosstabs.shape[1]
-        RowNumbers = Crosstabs.shape[0]
+def set_font(cell):
+    for paragraph in cell.paragraphs:
+        for run in paragraph.runs:
+            run.font.name = "Arial"
+            run.font.size = Pt(10)
 
-        if Type == "Ordinal":
-            # Creates a legend.
-            Legend = Codebook.iloc[3:, Codebook.columns.get_loc(Demographic_Category)]
-            Legend = Legend.dropna()
-            Legend = pd.DataFrame(Legend)
-            Legend = pd.concat(
-                [pd.DataFrame([["T", "Total"]]), Legend], ignore_index=True
-            )
 
-            # Gets the column names of the crosstabs
-            ColumnNames = list(Crosstabs.iloc[4])
+def write_docx(sample, name):
+    name += ".docx"
+    title = sample.name
 
-            # Gets parts of the crosstab to print
-            Titles = Crosstabs.iloc[0]
-            SampleSizes = Crosstabs.iloc[2]
-            Crosstabs = Crosstabs.iloc[4:]
+    document = Document()
 
-            # Converts the dataframes to tables
-            Legend = Legend.to_html(index=False, header=False)
-            Titles = Titles.to_frame().T.to_html(index=False, header=False)
-            SampleSizes = SampleSizes.to_frame().T.to_html(index=False, header=False)
-            Crosstabs = Crosstabs.to_html(index=False, header=False)
+    title = document.add_heading(title, 0)
+    for run in title.runs:
+        run.font.name = "Arial"
+        run.font.size = Pt(14)
+        run.font.color.rgb = RGBColor(0, 0, 0)
 
-            # Creates the Word document for export
-            document = Document(Template)
-            document.add_paragraph()
-            document.add_paragraph(Legend)
-            document.add_paragraph()
-            document.add_paragraph(Titles)
-            document.add_paragraph()
-            document.add_paragraph(SampleSizes)
-            document.add_paragraph()
-            document.add_paragraph(Crosstabs)
-            document.save(Outputs + "/" + File_Name)
+    sample.crosstabs.fillna("", inplace=True)
 
-            # Notifies of document export
-            print("Exported:", File_Name)
+    rows, cols = sample.crosstabs.shape
+    table = document.add_table(rows=rows + 1, cols=cols)
 
-        elif Type == "Nominal":
-            # Gets the column names of the crosstabs
-            ColumnNames = list(Crosstabs.iloc[3])
+    for i, column in enumerate(sample.crosstabs.columns):
+        cell = table.cell(0, i)
+        cell.text = str(column)
+        set_font(cell)
 
-            # Gets parts of the crosstab to print
-            SampleSizes = Crosstabs.iloc[1]
-            Crosstabs = Crosstabs.iloc[4:]
+    for i, row in enumerate(sample.crosstabs.iterrows()):
+        idx, data = row
+        for j, value in enumerate(data):
+            cell = table.cell(i + 1, j)
+            cell.text = str(value)
+            set_font(cell)
 
-            # Converts the dataframes to tables
-            SampleSizes = SampleSizes.to_frame().T.to_html(index=False, header=False)
-            Crosstabs = Crosstabs.to_html(index=False, header=False)
-
-            # Creates the Word document for export
-            document = Document(Template)
-            document.add_paragraph()
-            document.add_paragraph(SampleSizes)
-            document.add_paragraph()
-            document.add_paragraph(Crosstabs)
-            document.save(Outputs + "/" + File_Name)
-
-            # Notifies of document export
-            print("Exported:", File_Name)
-
+    if sample.crosstabs.shape[1] < 5:
+        print("Nominal")
     else:
-        print("Cannot export Word version due to large file size or template error.")
+        print("Ordinal")
+
+    document.save(name)
+
+    print("Exported:", name)
 
 
 def create_crosstab(type, data, index, columns, weight):
