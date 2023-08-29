@@ -506,10 +506,8 @@ def write_docx(sample, name):
 
     for i, column in enumerate(sample.crosstabs.columns):
         cell = table.cell(0, i)
-        # Clear existing paragraphs in the cell
         for p in cell.paragraphs:
             p.clear()
-        # Handle tuple headers
         if isinstance(column, tuple):
             p1 = cell.add_paragraph(str(column[0]))
             set_font_for_paragraph(p1)
