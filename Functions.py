@@ -1,7 +1,6 @@
+import os
 import pandas as pd
 import numpy as np
-import re
-import requests
 import warnings
 import pyreadstat
 import statsmodels
@@ -14,8 +13,6 @@ from docx.shared import Pt, RGBColor, Inches
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from docx.enum.table import WD_ALIGN_VERTICAL
-from openpyxl.utils.dataframe import dataframe_to_rows
 
 warnings.filterwarnings("ignore")
 
@@ -130,7 +127,7 @@ def analysis_tables(sample, type):
                     ],
                 ),
             )
-            ordinal_report(sample)
+            ordinal_report(sample, nominal_variable, ordinal_variable)
             sample.crosstabs = pd.DataFrame()
 
     if type == "Nominal":
@@ -240,12 +237,15 @@ def write_xlsx(sample, name):
     name += ".xlsx"
     title = sample.name
 
-    if len(title) > 31:
-        title = title[:28] + "..."
+    os.makedirs(f"Outputs/{title}", exist_ok=True)
+
+    sheet_name = title
+    if len(sheet_name) > 31:
+        sheet_name = sheet_name[:28] + "..."
 
     sample.crosstabs.index = [pd.NA] * len(sample.crosstabs)
-
-    sample.crosstabs.to_excel(name, sheet_name=title, index=True, header=True)
+    
+    sample.crosstabs.to_excel(f"Outputs/{title}/{name}", sheet_name=sheet_name, index=True, header=True)
 
     print(f"Exported: {name}")
 
@@ -253,6 +253,8 @@ def write_xlsx(sample, name):
 def write_docx(sample, name):
     name += ".docx"
     title = sample.name
+
+    os.makedirs(f"Outputs/{title}", exist_ok=True)
 
     document = Document()
 
@@ -265,8 +267,8 @@ def write_docx(sample, name):
     section.left_margin = Inches(0.5)
     section.right_margin = Inches(0.5)
 
-    title = document.add_heading(title, 0)
-    for run in title.runs:
+    header = document.add_heading(title, 0)
+    for run in header.runs:
         run.font.name = "Arial"
         run.font.size = Pt(14)
         run.font.color.rgb = RGBColor(0, 0, 0)
@@ -316,8 +318,8 @@ def write_docx(sample, name):
                     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
             vertical_alignment(cell)
-
-    document.save(name)
+    
+    document.save(f"Outputs/{title}/{name}")
 
     print("Exported:", name)
 
