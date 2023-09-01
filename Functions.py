@@ -28,7 +28,8 @@ def analysis(file):
             combinations(
                 list(product(values["Group"].unique(), values["Time"].unique())), 2
             )
-        ), desc="Running Analysis"
+        ),
+        desc="Running Analysis",
     ):
 
         class sample:
@@ -122,9 +123,10 @@ def analysis_tables(sample, type):
                         sample.metadata.column_names.index(nominal_variable)
                     ],
                 ),
-            variable=sample.metadata.column_labels[
-                        sample.metadata.column_names.index(nominal_variable)
-                    ])
+                variable=sample.metadata.column_labels[
+                    sample.metadata.column_names.index(nominal_variable)
+                ],
+            )
             ordinal_report(
                 sample,
                 document_title(
@@ -134,9 +136,10 @@ def analysis_tables(sample, type):
                     sample.metadata.column_labels[
                         sample.metadata.column_names.index(nominal_variable)
                     ],
-                ), variable=sample.metadata.column_labels[
-                        sample.metadata.column_names.index(nominal_variable)
-                    ]
+                ),
+                variable=sample.metadata.column_labels[
+                    sample.metadata.column_names.index(nominal_variable)
+                ],
             )
             sample.crosstabs = pd.DataFrame()
 
@@ -150,7 +153,7 @@ def nominal_crosstab(sample, nominal_variable):
         type="Nominal",
         data=sample.one.labels,
         index=nominal_variable,
-        columns="Overall",
+        columns="Total",
         weight=sample.one.weight,
     )
 
@@ -158,7 +161,7 @@ def nominal_crosstab(sample, nominal_variable):
         type="Nominal",
         data=sample.two.labels,
         index=nominal_variable,
-        columns="Overall",
+        columns="Total",
         weight=sample.two.weight,
     )
 
@@ -179,13 +182,13 @@ def nominal_crosstab(sample, nominal_variable):
         ],
         observed=pd.crosstab(
             index=sample.one.labels[nominal_variable],
-            columns=1,
+            columns="Total",
             values=sample.one.labels[sample.one.weight],
             aggfunc="sum",
         ),
         expected=pd.crosstab(
             index=sample.two.labels[nominal_variable],
-            columns=1,
+            columns="Total",
             values=sample.two.labels[sample.one.weight],
             aggfunc="sum",
         ),
@@ -251,15 +254,15 @@ def ordinal_report(sample, name, variable):
         header = title
     else:
         header = f"{title} by {variable}"
-    
+
     header = document.add_heading(header, 0)
     for run in header.runs:
         run.font.name = "Arial"
         run.font.size = Pt(14)
         run.font.color.rgb = RGBColor(0, 0, 0)
-    
+
     # Code goes here
-    
+
     document.save(f"Outputs/{title}/{name}")
 
     print("Exported:", name)
@@ -276,13 +279,15 @@ def write_xlsx(sample, name):
         sheet_name = sheet_name[:28] + "..."
 
     sample.crosstabs.index = [pd.NA] * len(sample.crosstabs)
-    
-    sample.crosstabs.to_excel(f"Outputs/{title}/{name}", sheet_name=sheet_name, index=True, header=True)
+
+    sample.crosstabs.to_excel(
+        f"Outputs/{title}/{name}", sheet_name=sheet_name, index=True, header=True
+    )
 
     print(f"Exported: {name}")
 
 
-def write_docx(sample, name, variable = None):
+def write_docx(sample, name, variable=None):
     name += ".docx"
     title = sample.name
 
@@ -302,7 +307,7 @@ def write_docx(sample, name, variable = None):
         header = title
     else:
         header = f"{title} by {variable}"
-    
+
     header = document.add_heading(header, 0)
     for run in header.runs:
         run.font.name = "Arial"
@@ -355,7 +360,7 @@ def write_docx(sample, name, variable = None):
                     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
             vertical_alignment(cell)
-    
+
     document.save(f"Outputs/{title}/{name}")
 
     print("Exported:", name)
@@ -610,10 +615,10 @@ class subsample:
         self.name = f"{group} at {time}"
         self.values = values[
             (values["Group"] == group) & (values["Time"] == time)
-        ].assign(Overall=1)
+        ].assign(Total="Total")
         self.labels = labels[
             (values["Group"] == group) & (values["Time"] == time)
-        ].assign(Overall="Total")
+        ].assign(Total="Total")
 
 
-analysis("Dataset (Short).sav")
+analysis("Dataset.sav")
