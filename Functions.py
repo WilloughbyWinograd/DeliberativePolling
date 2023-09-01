@@ -12,9 +12,7 @@ from tqdm import tqdm
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.oxml.ns import qn
-from docx.oxml import parse_xml
 from docx.oxml import OxmlElement
-from docx.enum.text import WD_UNDERLINE
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -94,7 +92,6 @@ def analysis_tables(sample, type):
             sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
 
         if type == "Ordinal":
-            sample.crosstabs = sample.crosstabs.iloc[1:]
             second_header = [""] * len(sample.crosstabs.columns)
             second_header[2] = sample.one.name
             second_header[
@@ -494,6 +491,15 @@ def write_docx(sample, name):
 
     document = Document()
 
+    section = document.sections[0]
+    section.orientation = 1
+    section.page_width = Inches(22)
+    section.page_height = Inches(22)
+    section.top_margin = Inches(0.5)
+    section.bottom_margin = Inches(0.5)
+    section.left_margin = Inches(0.5)
+    section.right_margin = Inches(0.5)
+
     title = document.add_heading(title, 0)
     for run in title.runs:
         run.font.name = "Arial"
@@ -509,9 +515,11 @@ def write_docx(sample, name):
         cell = table.cell(0, i)
         for p in cell.paragraphs:
             p.clear()
+        cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         if isinstance(column, tuple):
             p1 = cell.add_paragraph(str(column[0]))
             set_font(p1)
+            p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
             split = str(column[1]).find("(n = ")
             if split != -1:
@@ -519,12 +527,18 @@ def write_docx(sample, name):
                 for part in parts:
                     p = cell.add_paragraph(part)
                     set_font(p)
+                    p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
             else:
                 p2 = cell.add_paragraph(str(column[1]))
                 set_font(p2)
+                p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        else:
+            p = cell.add_paragraph(str(column))
+            set_font(p)
+            p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
     for i, row in enumerate(sample.crosstabs.iterrows()):
-        idx, data = row
+        data = row[1]
         for j, value in enumerate(data):
             cell = table.cell(i + 1, j)
             cell.text = str(value)
@@ -536,21 +550,7 @@ def write_docx(sample, name):
                 else:
                     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-                paragraph.space_before = Pt(0)
-
-            set_vertical_alignment(cell)
-
-    if sample.crosstabs.shape[1] < 5:
-        print("Nominal")
-    else:
-        section = document.sections[0]
-        section.orientation = 1
-        section.page_width = Inches(22)
-        section.page_height = Inches(22)
-        section.top_margin = Inches(0.5)
-        section.bottom_margin = Inches(0.5)
-        section.left_margin = Inches(0.5)
-        section.right_margin = Inches(0.5)
+            vertical_alignment(cell)
 
     document.save(name)
 
@@ -795,7 +795,7 @@ def set_font(item):
             run.font.size = Pt(10)
 
 
-def set_vertical_alignment(cell, align="bottom"):
+def vertical_alignment(cell, align="bottom"):
     tc = cell._tc
     tcPr = tc.get_or_add_tcPr()
     vAlign = OxmlElement("w:vAlign")
