@@ -12,6 +12,7 @@ from tqdm import tqdm
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.oxml.ns import qn
+from docx.oxml import parse_xml
 from docx.oxml import OxmlElement
 from docx.enum.text import WD_UNDERLINE
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
@@ -422,7 +423,7 @@ def ordinal_report(  ####### UNFINISHED
 
                     # Create a table in the document
                     table = document.add_table(rows=df.shape[0] + 1, cols=df.shape[1])
-                    table.autofit = False
+                    table.autofit = True
 
                     # Set table style
                     table.style = "Table Grid"
@@ -510,13 +511,17 @@ def write_docx(sample, name):
             p.clear()
         if isinstance(column, tuple):
             p1 = cell.add_paragraph(str(column[0]))
-            set_font_for_paragraph(p1)
-            
-            p2 = cell.add_paragraph(str(column[1]))
-            set_font_for_paragraph(p2)
-        else:
-            p = cell.add_paragraph(str(column))
-            set_font_for_paragraph(p)
+            set_font(p1)
+
+            split = str(column[1]).find("(n = ")
+            if split != -1:
+                parts = [str(column[1])[: split - 1], str(column[1])[split:]]
+                for part in parts:
+                    p = cell.add_paragraph(part)
+                    set_font(p)
+            else:
+                p2 = cell.add_paragraph(str(column[1]))
+                set_font(p2)
 
     for i, row in enumerate(sample.crosstabs.iterrows()):
         idx, data = row
@@ -524,6 +529,16 @@ def write_docx(sample, name):
             cell = table.cell(i + 1, j)
             cell.text = str(value)
             set_font(cell)
+
+            for paragraph in cell.paragraphs:
+                if j < 2:
+                    paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                else:
+                    paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+                paragraph.space_before = Pt(0)
+
+            set_vertical_alignment(cell)
 
     if sample.crosstabs.shape[1] < 5:
         print("Nominal")
@@ -768,17 +783,24 @@ def add_sample_size(variable, sample):
     return f"{variable} (n = {len(sample)})"
 
 
-def set_font(cell):
-    for paragraph in cell.paragraphs:
-        for run in paragraph.runs:
+def set_font(item):
+    if hasattr(item, "paragraphs"):  # Check if it's a cell
+        for paragraph in item.paragraphs:
+            for run in paragraph.runs:
+                run.font.name = "Arial"
+                run.font.size = Pt(10)
+    else:
+        for run in item.runs:
             run.font.name = "Arial"
             run.font.size = Pt(10)
 
 
-def set_font_for_paragraph(paragraph):
-    for run in paragraph.runs:
-        run.font.name = "Arial"
-        run.font.size = Pt(10)
+def set_vertical_alignment(cell, align="bottom"):
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    vAlign = OxmlElement("w:vAlign")
+    vAlign.set(qn("w:val"), align)
+    tcPr.append(vAlign)
 
 
 class subsample:
