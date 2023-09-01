@@ -9,9 +9,9 @@ from scipy.stats import chi2_contingency
 from itertools import combinations, product
 from tqdm import tqdm
 from docx import Document
-from docx.shared import Pt, RGBColor, Inches
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
 warnings.filterwarnings("ignore")
@@ -28,7 +28,7 @@ def analysis(file):
             combinations(
                 list(product(values["Group"].unique(), values["Time"].unique())), 2
             )
-        )
+        ), desc="Running Analysis"
     ):
 
         class sample:
@@ -39,7 +39,7 @@ def analysis(file):
                 combination[1][0], combination[1][1], "weight_a", values, labels
             )
             name = comparison_name(one, two)
-            metadata = codebook  ##.assign(Overall = np.nan)
+            metadata = codebook
             paired = combination[0][0] == combination[1][0]
 
         sample.one.values.set_index(sample.one.values["IDs"], inplace=True)
@@ -82,10 +82,6 @@ def analysis_tables(sample, type):
                     sample, nominal_variable, ordinal_variable
                 )
 
-            sample.crosstab.loc[-1] = [pd.NA] * len(sample.crosstab.columns)
-            sample.crosstab.index += 1
-            sample.crosstab.sort_index(inplace=True)
-
             sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
 
         if type == "Ordinal":
@@ -126,8 +122,22 @@ def analysis_tables(sample, type):
                         sample.metadata.column_names.index(nominal_variable)
                     ],
                 ),
+            variable=sample.metadata.column_labels[
+                        sample.metadata.column_names.index(nominal_variable)
+                    ])
+            ordinal_report(
+                sample,
+                document_title(
+                    sample,
+                    "Report",
+                    type,
+                    sample.metadata.column_labels[
+                        sample.metadata.column_names.index(nominal_variable)
+                    ],
+                ), variable=sample.metadata.column_labels[
+                        sample.metadata.column_names.index(nominal_variable)
+                    ]
             )
-            ordinal_report(sample, nominal_variable, ordinal_variable)
             sample.crosstabs = pd.DataFrame()
 
     if type == "Nominal":
@@ -229,8 +239,30 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     return sample.crosstab
 
 
-def ordinal_report(sample, nominal_variable, ordinal_variable):
-    print("Done")
+def ordinal_report(sample, name, variable):
+    name += ".docx"
+    title = sample.name
+
+    os.makedirs(f"Outputs/{title}", exist_ok=True)
+
+    document = Document()
+
+    if variable == None:
+        header = title
+    else:
+        header = f"{title} by {variable}"
+    
+    header = document.add_heading(header, 0)
+    for run in header.runs:
+        run.font.name = "Arial"
+        run.font.size = Pt(14)
+        run.font.color.rgb = RGBColor(0, 0, 0)
+    
+    # Code goes here
+    
+    document.save(f"Outputs/{title}/{name}")
+
+    print("Exported:", name)
 
 
 def write_xlsx(sample, name):
@@ -250,7 +282,7 @@ def write_xlsx(sample, name):
     print(f"Exported: {name}")
 
 
-def write_docx(sample, name):
+def write_docx(sample, name, variable = None):
     name += ".docx"
     title = sample.name
 
@@ -259,7 +291,6 @@ def write_docx(sample, name):
     document = Document()
 
     section = document.sections[0]
-    section.orientation = 1
     section.page_width = Inches(22)
     section.page_height = Inches(22)
     section.top_margin = Inches(0.5)
@@ -267,7 +298,12 @@ def write_docx(sample, name):
     section.left_margin = Inches(0.5)
     section.right_margin = Inches(0.5)
 
-    header = document.add_heading(title, 0)
+    if variable == None:
+        header = title
+    else:
+        header = f"{title} by {variable}"
+    
+    header = document.add_heading(header, 0)
     for run in header.runs:
         run.font.name = "Arial"
         run.font.size = Pt(14)
@@ -277,6 +313,7 @@ def write_docx(sample, name):
 
     rows, cols = sample.crosstabs.shape
     table = document.add_table(rows=rows + 2, cols=cols)
+    table.style = "Medium List 2"
 
     for i, column in enumerate(sample.crosstabs.columns):
         cell = table.cell(0, i)
@@ -526,24 +563,19 @@ def test_t(sample, filter, nominal_variable, ordinal_variable):
 
 
 def document_title(sample, kind, type, nominal_variable):
-    if sample.one.weight == sample.two.weight:
-        weights = sample.one.weight
-    else:
-        weights = sample.one.weight + sample.two.weight
-
     if type == "Nominal":
-        return " - ".join([kind, type, sample.name, weights])
+        return " - ".join([kind, f"{type} Variables", sample.name])
     else:
-        return " - ".join([kind, type, sample.name, weights, nominal_variable])
+        return " - ".join([kind, f"{type} Variables", sample.name, nominal_variable])
 
 
 def comparison_name(sample1, sample2):
     if sample1.group == sample2.group:
-        return f"{sample1.group} at {sample1.time} v. {sample2.time}"
+        return f"{sample1.group} at {sample1.time} ({sample1.weight}) v. {sample2.time} ({sample2.weight})"
     elif sample1.time == sample2.time:
-        return f"{sample1.group} v. {sample2.group} at {sample1.time}"
+        return f"{sample1.group} ({sample1.weight}) v. {sample2.group} ({sample2.weight}) at {sample1.time}"
     else:
-        return f"{sample1.group} at {sample1.time} v. {sample2.group} at {sample2.time}"
+        return f"{sample1.group} at {sample1.time} ({sample1.weight}) v. {sample2.group} at {sample2.time} ({sample2.weight})"
 
 
 def add_sample_size(variable, sample):
