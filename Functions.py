@@ -22,22 +22,25 @@ def analysis(file):
 
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
+    weights = ["weight_a"] ################################################################################################
 
     for combination in tqdm(
         list(
             combinations(
-                list(product(values["Group"].unique(), values["Time"].unique())), 2
+                list(product(values["Group"].unique(), values["Time"].unique(), weights)), 2
             )
         ),
-        desc="Running Analysis",
+        position=0,
+        desc="Comparing Weighted Sampling",
+        leave=True,
     ):
 
         class sample:
             one = subsample(
-                combination[0][0], combination[0][1], "weight_a", values, labels
-            )  # Add multiweight support
+                combination[0][0], combination[0][1], combination[0][2], values, labels
+            )
             two = subsample(
-                combination[1][0], combination[1][1], "weight_a", values, labels
+                combination[1][0], combination[1][1], combination[1][2], values, labels
             )
             name = comparison_name(one, two)
             metadata = codebook
@@ -74,8 +77,16 @@ def analysis_tables(sample, type):
             if measure == "ordinal"
         ]
 
-    for nominal_variable in nominal_variables:
-        for ordinal_variable in reversed(ordinal_variables):
+    for nominal_variable in tqdm(
+        nominal_variables, position=1, desc="Comparing Nominal Variables", leave=False
+    ):
+        for ordinal_variable in tqdm(
+            reversed(ordinal_variables),
+            position=2,
+            desc="Comparing Ordinal Variables",
+            leave=False,
+            total=len(ordinal_variables),
+        ):
             if type == "Nominal":
                 sample.crosstab = nominal_crosstab(sample, nominal_variable)
             if type == "Ordinal":
@@ -265,7 +276,7 @@ def ordinal_report(sample, name, variable):
 
     document.save(f"Outputs/{title}/{name}")
 
-    print("Exported:", name)
+    # print("Exported:", name)
 
 
 def write_xlsx(sample, name):
@@ -284,7 +295,7 @@ def write_xlsx(sample, name):
         f"Outputs/{title}/{name}", sheet_name=sheet_name, index=True, header=True
     )
 
-    print(f"Exported: {name}")
+    # print(f"Exported: {name}")
 
 
 def write_docx(sample, name, variable=None):
@@ -363,7 +374,7 @@ def write_docx(sample, name, variable=None):
 
     document.save(f"Outputs/{title}/{name}")
 
-    print("Exported:", name)
+    #print("Exported:", name)
 
 
 def create_crosstab(type, data, index, columns, weight):
