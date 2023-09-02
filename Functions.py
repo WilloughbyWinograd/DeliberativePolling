@@ -22,7 +22,9 @@ def analysis(file):
 
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
-    weights = ["weight_a"] ################################################################################################
+
+    scale_variables = [key for key, measure in codebook.variable_measure.items() if measure == "scale"]
+    weights = [var for var in scale_variables if 'weight' in var]
 
     for combination in tqdm(
         list(
@@ -32,7 +34,7 @@ def analysis(file):
         ),
         position=0,
         desc="Comparing Weighted Sampling",
-        leave=True,
+        leave=True
     ):
 
         class sample:
@@ -44,7 +46,7 @@ def analysis(file):
             )
             name = comparison_name(one, two)
             metadata = codebook
-            paired = combination[0][0] == combination[1][0]
+            paired = one.name + one.weight == two.name + two.weight
 
         sample.one.values.set_index(sample.one.values["IDs"], inplace=True)
         sample.two.values.set_index(sample.two.values["IDs"], inplace=True)
@@ -157,6 +159,7 @@ def analysis_tables(sample, type):
     if type == "Nominal":
         write_xlsx(sample, document_title(sample, "Tables", type, nominal_variable))
         write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
+        nominal_report(sample, document_title(sample, "Report", type, sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],), )
 
 
 def nominal_crosstab(sample, nominal_variable):
@@ -276,7 +279,24 @@ def ordinal_report(sample, name, variable):
 
     document.save(f"Outputs/{title}/{name}")
 
-    # print("Exported:", name)
+
+def nominal_report(sample, name):
+    name += ".docx"
+    title = sample.name
+
+    os.makedirs(f"Outputs/{title}", exist_ok=True)
+
+    document = Document()
+    
+    header = document.add_heading(title, 0)
+    for run in header.runs:
+        run.font.name = "Arial"
+        run.font.size = Pt(14)
+        run.font.color.rgb = RGBColor(0, 0, 0)
+
+    # Code goes here
+
+    document.save(f"Outputs/{title}/{name}")
 
 
 def write_xlsx(sample, name):
@@ -294,8 +314,6 @@ def write_xlsx(sample, name):
     sample.crosstabs.to_excel(
         f"Outputs/{title}/{name}", sheet_name=sheet_name, index=True, header=True
     )
-
-    # print(f"Exported: {name}")
 
 
 def write_docx(sample, name, variable=None):
@@ -373,8 +391,6 @@ def write_docx(sample, name, variable=None):
             vertical_alignment(cell)
 
     document.save(f"Outputs/{title}/{name}")
-
-    #print("Exported:", name)
 
 
 def create_crosstab(type, data, index, columns, weight):
