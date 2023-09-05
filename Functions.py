@@ -26,7 +26,7 @@ def analysis(file):
     scale_variables = [key for key, measure in codebook.variable_measure.items() if measure == "scale"]
     weights = [var for var in scale_variables if 'weight' in var]
 
-    sample_comparisons = [comb for comb in list( combinations(list(product(values["Group"].unique(), values["Time"].unique(), weights)), 2 ) ) if not (comb[0][0] == comb[1][0])]
+    sample_comparisons = [comb for comb in list( combinations(list(product(values["Group"].unique(), values["Time"].unique(), weights)), 2 ) ) if not (comb[0][0] == comb[1][0] and comb[0][2] != comb[1][2])]
     
     for combination in tqdm(
         sample_comparisons,
