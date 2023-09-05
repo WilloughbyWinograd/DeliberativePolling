@@ -19,24 +19,22 @@ warnings.filterwarnings("ignore")
 
 def analysis(file):
     assert file.lower().endswith(".sav"), "File must be an SPSS .SAV file."
-
+    
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
 
     scale_variables = [key for key, measure in codebook.variable_measure.items() if measure == "scale"]
     weights = [var for var in scale_variables if 'weight' in var]
 
+    sample_comparisons = [comb for comb in list(combinations(list(product(values["Group"], values["Time"], values[weights])), 2)) if not (comb[0][0] == comb[1][0] and comb[0][1] == comb[1][1] and comb[0][2] != comb[1][2])]
+    
     for combination in tqdm(
-        list(
-            combinations(
-                list(product(values["Group"].unique(), values["Time"].unique(), weights)), 2
-            )
-        ),
+        sample_comparisons,
         position=0,
         desc="Comparing Weighted Sampling",
         leave=True
     ):
-
+        
         class sample:
             one = subsample(
                 combination[0][0], combination[0][1], combination[0][2], values, labels
