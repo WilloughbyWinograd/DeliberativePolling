@@ -19,22 +19,34 @@ warnings.filterwarnings("ignore")
 
 def analysis(file):
     assert file.lower().endswith(".sav"), "File must be an SPSS .SAV file."
-    
+
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
 
-    scale_variables = [key for key, measure in codebook.variable_measure.items() if measure == "scale"]
-    weights = [var for var in scale_variables if 'weight' in var]
+    scale_variables = [
+        key for key, measure in codebook.variable_measure.items() if measure == "scale"
+    ]
+    weights = ["Unweighted"] + [
+        var for var in scale_variables if "weight" in var.lower()
+    ]
 
-    sample_comparisons = [comb for comb in list( combinations(list(product(values["Group"].unique(), values["Time"].unique(), weights)), 2 ) ) if not (comb[0][0] == comb[1][0] and comb[0][2] != comb[1][2])]
-    
+    sample_comparisons = [
+        comb
+        for comb in list(
+            combinations(
+                list(
+                    product(values["Group"].unique(), values["Time"].unique(), weights)
+                ),
+                2,
+            )
+        )
+        if not (comb[0][0] == comb[1][0] and comb[0][2] != comb[1][2])
+    ]
+
     for combination in tqdm(
-        sample_comparisons,
-        position=0,
-        desc="Comparing Weighted Sampling",
-        leave=True
+        sample_comparisons, position=0, desc="Comparing Weighted Sampling", leave=True
     ):
-        
+
         class sample:
             one = subsample(
                 combination[0][0], combination[0][1], combination[0][2], values, labels
@@ -124,13 +136,13 @@ def analysis_tables(sample, type):
                     ],
                 ),
             )
-            #write_docx(sample,document_title(sample,"Tables",type,sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],),variable=sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],)
-            #ordinal_report( sample, document_title( sample, "Report", type, sample.metadata.column_labels[ sample.metadata.column_names.index(nominal_variable) ], ), variable=sample.metadata.column_labels[ sample.metadata.column_names.index(nominal_variable) ], ) sample.crosstabs = pd.DataFrame()
+            # write_docx(sample,document_title(sample,"Tables",type,sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],),variable=sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],)
+            # ordinal_report( sample, document_title( sample, "Report", type, sample.metadata.column_labels[ sample.metadata.column_names.index(nominal_variable) ], ), variable=sample.metadata.column_labels[ sample.metadata.column_names.index(nominal_variable) ], ) sample.crosstabs = pd.DataFrame()
 
     if type == "Nominal":
         write_xlsx(sample, document_title(sample, "Tables", type, nominal_variable))
-        #write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
-        #nominal_report(sample, document_title(sample, "Report", type, sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],), )
+        # write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
+        # nominal_report(sample, document_title(sample, "Report", type, sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],), )
 
 
 def nominal_crosstab(sample, nominal_variable):
@@ -183,12 +195,18 @@ def nominal_crosstab(sample, nominal_variable):
 
 
 def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
+    labels = sample.metadata.variable_value_labels[ordinal_variable].values()
+    labels_ordered = []
+    [labels_ordered.append(value) for value in labels if value not in labels_ordered]
+    labels_ordered = labels_ordered + ["DK/NA"]
+
     sample.one.crosstab = create_crosstab(
         type="Ordinal",
         data=sample.one.labels,
         index=ordinal_variable,
         columns=nominal_variable,
         weight=sample.one.weight,
+        labels=labels_ordered,
     )
 
     sample.two.crosstab = create_crosstab(
@@ -197,6 +215,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
         index=ordinal_variable,
         columns=nominal_variable,
         weight=sample.two.weight,
+        labels=labels_ordered,
     )
 
     sample.crosstab = pd.concat(
@@ -258,7 +277,7 @@ def nominal_report(sample, name):
     os.makedirs(f"Outputs/{title}", exist_ok=True)
 
     document = Document()
-    
+
     header = document.add_heading(title, 0)
     for run in header.runs:
         run.font.name = "Arial"
@@ -364,18 +383,20 @@ def write_docx(sample, name, variable=None):
     document.save(f"Outputs/{title}/{name}")
 
 
-def create_crosstab(type, data, index, columns, weight):
+def create_crosstab(type, data, index, columns, weight, labels=None):
     if type == "Nominal":
         margins = False
         dropna = True
         normalize = False
+        index_data = data[index]
     else:
         margins = True
         dropna = False
         normalize = "columns"
+        index_data = data[index].cat.add_categories(["DK/NA"]).fillna("DK/NA")
 
     absolute_frequencies = pd.crosstab(
-        index=data[index].cat.add_categories(["DK/NA"]).fillna("DK/NA"),
+        index=index_data,
         columns=data[columns],
         values=data[weight],
         aggfunc="sum",
@@ -384,19 +405,22 @@ def create_crosstab(type, data, index, columns, weight):
         normalize=normalize,
     )
 
+    if not labels == None:
+        absolute_frequencies = absolute_frequencies.reindex(labels)
+
     combined_frequencies = (
         (absolute_frequencies / absolute_frequencies.sum().sum() * 100)
         .round(1)
-        .apply(lambda x: x)
+        .astype(str)
         .applymap(lambda x: f"({x}%)")
         + " "
-        + absolute_frequencies.astype(int).astype(str)
+        + absolute_frequencies.astype(str)
     )
 
     if type == "Nominal":
-        return combined_frequencies.iloc[:, ::-1]
+        return combined_frequencies.iloc[:, ::-1].replace("nan", "0")
     else:
-        return 100 * absolute_frequencies.iloc[:, ::-1]
+        return 100 * absolute_frequencies.iloc[:, ::-1].fillna(0)
 
 
 def add_crosstab_tests(sample, nominal_variable, ordinal_variable):
@@ -573,12 +597,20 @@ def document_title(sample, kind, type, nominal_variable):
 
 
 def comparison_name(sample1, sample2):
-    if sample1.group == sample2.group:
-        return f"{sample1.group} at {sample1.time} ({sample1.weight}) v. {sample2.time} ({sample2.weight})"
-    elif sample1.time == sample2.time:
-        return f"{sample1.group} ({sample1.weight}) v. {sample2.group} ({sample2.weight}) at {sample1.time}"
+    if sample1.weight == sample2.weight:
+        if sample1.group == sample2.group:
+            return f"{sample1.group} at {sample1.time} v. {sample2.time} ({sample1.weight})"
+        elif sample1.time == sample2.time:
+            return f"{sample1.group} v. {sample2.group} at {sample1.time} ({sample1.weight})"
+        else:
+            return f"{sample1.group} at {sample1.time} v. {sample2.group} at {sample2.time} ({sample1.weight})"
     else:
-        return f"{sample1.group} at {sample1.time} ({sample1.weight}) v. {sample2.group} at {sample2.time} ({sample2.weight})"
+        if sample1.group == sample2.group:
+            return f"{sample1.group} at {sample1.time} ({sample1.weight}) v. {sample2.time} ({sample2.weight})"
+        elif sample1.time == sample2.time:
+            return f"{sample1.group} ({sample1.weight}) v. {sample2.group} ({sample2.weight}) at {sample1.time}"
+        else:
+            return f"{sample1.group} at {sample1.time} ({sample1.weight}) v. {sample2.group} at {sample2.time} ({sample2.weight})"
 
 
 def add_sample_size(variable, sample):
@@ -611,12 +643,16 @@ class subsample:
         self.time = time
         self.weight = weight
         self.name = f"{group} at {time}"
-        self.values = values[
-            (values["Group"] == group) & (values["Time"] == time)
-        ].assign(Total="Total")
-        self.labels = labels[
-            (values["Group"] == group) & (values["Time"] == time)
-        ].assign(Total="Total")
+        self.values = (
+            values[(values["Group"] == group) & (values["Time"] == time)]
+            .assign(Total="Total")
+            .assign(Unweighted=1)
+        )
+        self.labels = (
+            labels[(values["Group"] == group) & (values["Time"] == time)]
+            .assign(Total="Total")
+            .assign(Unweighted=1)
+        )
 
 
 analysis("Dataset.sav")
