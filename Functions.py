@@ -26,9 +26,7 @@ def analysis(file):
     scale_variables = [
         key for key, measure in codebook.variable_measure.items() if measure == "scale"
     ]
-    weights = ["Unweighted"] + [
-        var for var in scale_variables if "weight" in var.lower()
-    ]
+    weights = ["Unweighted"] + [var for var in scale_variables if "weight" in var.lower()]
 
     sample_comparisons = [
         comb
@@ -42,7 +40,7 @@ def analysis(file):
         )
         if not (comb[0][0] == comb[1][0] and comb[0][2] != comb[1][2])
     ]
-    
+
     for combination in tqdm(
         sample_comparisons, position=0, desc="Comparing Weighted Sampling", leave=True
     ):
@@ -90,7 +88,10 @@ def analysis_tables(sample, type):
         ]
 
     for nominal_variable in tqdm(
-        nominal_variables, position=1, desc="Comparing Nominal Variables", leave=False
+        nominal_variables,
+        position=1,
+        desc="Comparing Nominal Variables",
+        leave=False,
     ):
         for ordinal_variable in tqdm(
             reversed(ordinal_variables),
@@ -405,22 +406,19 @@ def create_crosstab(type, data, index, columns, weight, labels=None):
         normalize=normalize,
     )
 
-    if not labels == None:
-        absolute_frequencies = absolute_frequencies.reindex(labels)
-
-    combined_frequencies = (
-        (absolute_frequencies / absolute_frequencies.sum().sum() * 100)
-        .round(1)
-        .astype(str)
-        .applymap(lambda x: f"({x}%)")
-        + " "
-        + absolute_frequencies.astype(str)
-    )
-
     if type == "Nominal":
+        combined_frequencies = (
+            (absolute_frequencies / absolute_frequencies.sum().sum() * 100)
+            .round(1)
+            .astype(str)
+            .applymap(lambda x: f"({x}%)")
+            + " "
+            + absolute_frequencies.round().astype(int).astype(str)
+        )
+
         return combined_frequencies.iloc[:, ::-1].replace("nan", "0")
     else:
-        return 100 * absolute_frequencies.iloc[:, ::-1].fillna(0)
+        return 100 * absolute_frequencies.iloc[:, ::-1].fillna(0).reindex(labels)
 
 
 def add_crosstab_tests(sample, nominal_variable, ordinal_variable):
