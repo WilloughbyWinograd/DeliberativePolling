@@ -26,7 +26,9 @@ def analysis(file):
     scale_variables = [
         key for key, measure in codebook.variable_measure.items() if measure == "scale"
     ]
-    weights = ["Unweighted"] + [var for var in scale_variables if "weight" in var.lower()]
+    weights = ["Unweighted"] + [
+        var for var in scale_variables if "weight" in var.lower()
+    ]
 
     sample_comparisons = [
         comb
@@ -54,7 +56,7 @@ def analysis(file):
             )
             name = comparison_name(one, two)
             metadata = codebook
-            paired = one.name + one.weight == two.name + two.weight
+            paired = one.group + one.weight == two.group + two.weight
 
         sample.one.values.set_index(sample.one.values["IDs"], inplace=True)
         sample.two.values.set_index(sample.two.values["IDs"], inplace=True)
@@ -506,6 +508,46 @@ def test_t(sample, filter, nominal_variable, ordinal_variable):
             sample.two.labels[nominal_variable] == filter
         ]
 
+    sample = full_entries(sample, ordinal_variable)
+
+    if sample.paired:
+        P = statsmodels.stats.weightstats.DescrStatsW(
+            data=sample.two.ordinal_filtered - sample.one.ordinal_filtered,
+            weights=sample.one.weights_filtered,
+        ).ttest_mean(0)[1]
+
+    else:
+        P = statsmodels.stats.weightstats.ttest_ind(
+            x1=sample.one.ordinal_filtered,
+            x2=sample.two.ordinal_filtered,
+            alternative="two-sided",
+            usevar="unequal",
+            weights=(sample.one.weights_filtered, sample.two.weights_filtered),
+        )[1]
+
+    if (
+        not sum(sample.one.weights_filtered) == 0
+        and not sum(sample.two.weights_filtered) == 0
+    ):
+        mean1 = np.average(
+            sample.one.ordinal_filtered, weights=sample.one.weights_filtered
+        )
+        mean2 = np.average(
+            sample.two.ordinal_filtered, weights=sample.two.weights_filtered
+        )
+        mean_difference = "{:.3f}".format(mean2 - mean1)
+        mean1 = "{:.3f}".format(mean1)
+        mean2 = "{:.3f}".format(mean2)
+    else:
+        mean1 = mean2 = mean_difference = pd.NA
+
+    if not np.isnan(P):
+        mean_difference = f"{mean_difference} (P = {P:.3f})"
+
+    return mean1, mean2, mean_difference
+
+
+def full_entries(sample, ordinal_variable):
     if sample.paired:
         complete_cases = pd.concat(
             (
@@ -550,41 +592,7 @@ def test_t(sample, filter, nominal_variable, ordinal_variable):
         sample.two.ordinal_filtered = complete_cases[ordinal_variable]
         sample.two.weights_filtered = complete_cases[sample.two.weight]
 
-    if sample.paired:
-        P = statsmodels.stats.weightstats.DescrStatsW(
-            data=sample.two.ordinal_filtered - sample.one.ordinal_filtered,
-            weights=sample.one.weights_filtered,
-        ).ttest_mean(0)[1]
-
-    else:
-        P = statsmodels.stats.weightstats.ttest_ind(
-            x1=sample.one.ordinal_filtered,
-            x2=sample.two.ordinal_filtered,
-            alternative="two-sided",
-            usevar="unequal",
-            weights=(sample.one.weights_filtered, sample.two.weights_filtered),
-        )[1]
-
-    if (
-        not sum(sample.one.weights_filtered) == 0
-        and not sum(sample.two.weights_filtered) == 0
-    ):
-        mean1 = np.average(
-            sample.one.ordinal_filtered, weights=sample.one.weights_filtered
-        )
-        mean2 = np.average(
-            sample.two.ordinal_filtered, weights=sample.two.weights_filtered
-        )
-        mean_difference = "{:.3f}".format(mean2 - mean1)
-        mean1 = "{:.3f}".format(mean1)
-        mean2 = "{:.3f}".format(mean2)
-    else:
-        mean1 = mean2 = mean_difference = pd.NA
-
-    if not np.isnan(P):
-        mean_difference = f"{mean_difference} (P = {P:.3f})"
-
-    return mean1, mean2, mean_difference
+    return sample
 
 
 def document_title(sample, kind, type, nominal_variable):
