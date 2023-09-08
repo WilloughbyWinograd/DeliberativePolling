@@ -168,15 +168,15 @@ def nominal_crosstab(sample, nominal_variable):
     sample.crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab], axis=1)
 
     sample.crosstab = sample.crosstab.reset_index()
-    sample.crosstab.insert(0, "Category", np.nan)
+    sample.crosstab.insert(0, "Variable", np.nan)
     sample.crosstab.columns = [
-        "Category",
-        "Group",
+        "Variable",
+        "Values",
         add_sample_size(sample.one.name, sample.one.values[nominal_variable]),
         add_sample_size(sample.two.name, sample.two.values[nominal_variable]),
     ]
 
-    sample.crosstab.loc[0, "Category"] = test_chi(
+    sample.crosstab.loc[0, "Variable"] = test_chi(
         variable=sample.metadata.column_labels[
             sample.metadata.column_names.index(nominal_variable)
         ],
@@ -239,7 +239,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     sample.crosstab.insert(0, "Variable", np.nan)
     crosstab_header = sample.crosstab.columns.tolist()
     crosstab_header[0] = "Variable"
-    crosstab_header[1] = "Prompt and Responses"
+    crosstab_header[1] = "Label, Values"
     sample.crosstab.columns = crosstab_header
     sample.crosstab.iloc[0, 0] = ordinal_variable
     sample.crosstab.iloc[0, 1] = sample.metadata.column_labels[
