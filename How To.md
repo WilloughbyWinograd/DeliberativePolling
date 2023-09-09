@@ -1,0 +1,1 @@
+The purpose of this Python package is to analyze survey data for Deliberative Polling experiments.
