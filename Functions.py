@@ -82,7 +82,7 @@ def analysis_tables(sample, type):
 
     if type == "Nominal":
         ordinal_variables = [1]
-    if type == "Ordinal":
+    else:
         ordinal_variables = [
             key
             for key, measure in sample.metadata.variable_measure.items()
@@ -139,13 +139,50 @@ def analysis_tables(sample, type):
                     ],
                 ),
             )
-            # write_docx(sample,document_title(sample,"Tables",type,sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],),variable=sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],)
-            # ordinal_report( sample, document_title( sample, "Report", type, sample.metadata.column_labels[ sample.metadata.column_names.index(nominal_variable) ], ), variable=sample.metadata.column_labels[ sample.metadata.column_names.index(nominal_variable) ], ) sample.crosstabs = pd.DataFrame()
+            write_docx(
+                sample,
+                document_title(
+                    sample,
+                    "Tables",
+                    type,
+                    sample.metadata.column_labels[
+                        sample.metadata.column_names.index(nominal_variable)
+                    ],
+                ),
+                variable=sample.metadata.column_labels[
+                    sample.metadata.column_names.index(nominal_variable)
+                ],
+            )
+            ordinal_report(
+                sample,
+                document_title(
+                    sample,
+                    "Report",
+                    type,
+                    sample.metadata.column_labels[
+                        sample.metadata.column_names.index(nominal_variable)
+                    ],
+                ),
+                variable=sample.metadata.column_labels[
+                    sample.metadata.column_names.index(nominal_variable)
+                ],
+            )
+            sample.crosstabs = pd.DataFrame()
 
     if type == "Nominal":
         write_xlsx(sample, document_title(sample, "Tables", type, nominal_variable))
-        # write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
-        # nominal_report(sample, document_title(sample, "Report", type, sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],), )
+        write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
+        nominal_report(
+            sample,
+            document_title(
+                sample,
+                "Report",
+                type,
+                sample.metadata.column_labels[
+                    sample.metadata.column_names.index(nominal_variable)
+                ],
+            ),
+        )
 
 
 def nominal_crosstab(sample, nominal_variable):
