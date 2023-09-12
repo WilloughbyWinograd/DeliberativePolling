@@ -71,6 +71,7 @@ def analysis(file):
 
 def analysis_tables(sample, type):
     sample.crosstabs = pd.DataFrame()
+    sample.summaries = ["Strart", "ssd"]
 
     sample.metadata.variable_measure.pop("Group", None)
     sample.metadata.variable_measure.pop("Time", None)
@@ -83,11 +84,15 @@ def analysis_tables(sample, type):
     if type == "Nominal":
         ordinal_variables = [1]
     else:
-        ordinal_variables = [
-            key
-            for key, measure in sample.metadata.variable_measure.items()
-            if measure == "ordinal"
-        ]
+        ordinal_variables = list(
+            reversed(
+                [
+                    key
+                    for key, measure in sample.metadata.variable_measure.items()
+                    if measure == "ordinal"
+                ]
+            )
+        )
 
     for nominal_variable in tqdm(
         nominal_variables,
@@ -96,7 +101,7 @@ def analysis_tables(sample, type):
         leave=False,
     ):
         for ordinal_variable in tqdm(
-            reversed(ordinal_variables),
+            ordinal_variables,
             position=2,
             desc="Comparing Ordinal Variables",
             leave=False,
@@ -104,12 +109,17 @@ def analysis_tables(sample, type):
         ):
             if type == "Nominal":
                 sample.crosstab = nominal_crosstab(sample, nominal_variable)
+                sample.summary = nominal_summary(sample, nominal_variable)
             if type == "Ordinal":
                 sample.crosstab = ordinal_crosstab(
                     sample, nominal_variable, ordinal_variable
                 )
+                sample.summary = ordinal_summary(
+                    sample, nominal_variable, ordinal_variable
+                )
 
             sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
+            sample.summaries = sample.summaries + sample.summary
 
         if type == "Ordinal":
             second_header = [""] * len(sample.crosstabs.columns)
@@ -139,50 +149,13 @@ def analysis_tables(sample, type):
                     ],
                 ),
             )
-            write_docx(
-                sample,
-                document_title(
-                    sample,
-                    "Tables",
-                    type,
-                    sample.metadata.column_labels[
-                        sample.metadata.column_names.index(nominal_variable)
-                    ],
-                ),
-                variable=sample.metadata.column_labels[
-                    sample.metadata.column_names.index(nominal_variable)
-                ],
-            )
-            ordinal_report(
-                sample,
-                document_title(
-                    sample,
-                    "Report",
-                    type,
-                    sample.metadata.column_labels[
-                        sample.metadata.column_names.index(nominal_variable)
-                    ],
-                ),
-                variable=sample.metadata.column_labels[
-                    sample.metadata.column_names.index(nominal_variable)
-                ],
-            )
+            # write_docx(sample,document_title(sample,"Tables",type,sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],),variable=sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],)
             sample.crosstabs = pd.DataFrame()
+            sample.summaries = ["Strart", "ssd"]
 
     if type == "Nominal":
         write_xlsx(sample, document_title(sample, "Tables", type, nominal_variable))
-        write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
-        nominal_report(
-            sample,
-            document_title(
-                sample,
-                "Report",
-                type,
-                sample.metadata.column_labels[
-                    sample.metadata.column_names.index(nominal_variable)
-                ],
-            ),
-        )
+        # write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
 
 
 def nominal_crosstab(sample, nominal_variable):
@@ -286,47 +259,41 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     return sample.crosstab
 
 
-def ordinal_report(sample, name, variable):
-    name += ".docx"
-    title = sample.name
+def ordinal_summary(sample, nominal_variable, ordinal_variable):
 
-    os.makedirs(f"Outputs/{title}", exist_ok=True)
+    label = sample.metadata.column_labels[sample.metadata.column_names.index(ordinal_variable)]
 
-    document = Document()
+    plurality1 = "a majority response of 'Favor'"
+    plurality2 = "a majority response of 'Oppose'"
+    likeness = "unlike"
+    change_difference = "increased significantly by 0.123 (P=0.043)"
+    value = "Male"
 
-    if variable == None:
-        header = title
+    if sample.paired:
+        if value == "All":
+            statement = f"{sample.one.group} respond to the statement, {label}. Among {sample.one.name},"
+        else:
+            statement += f"Among those who selected {value},"
+        statement += f" the average response {change_difference} between {sample.one.time} and {sample.two.time}. At {sample.one.time}, there was {plurality1} among this group, {likeness} at {sample.two.time}"
+        if likeness == "unlike":
+            statement += f" when there was {plurality2}"
+        statement += f"."
     else:
-        header = f"{title} by {variable}"
+        if value == "All":
+            statement = f"{sample.one.name} and {sample.two.name} respond to the statement, {label}. There"
+        else:
+            statement += f"Among those who selected {value}, there"
+        statement += f" was a {change_difference} difference in the average response between {sample.one.name} and {sample.two.name}. Among {sample.one.group}, there was {plurality1}, {likeness} {sample.two.group}"
+        if likeness == "unlike":
+            statement += f" which had {plurality2}"
+        statement += f"."
+    
+    s
+    return statement
 
-    header = document.add_heading(header, 0)
-    for run in header.runs:
-        run.font.name = "Arial"
-        run.font.size = Pt(14)
-        run.font.color.rgb = RGBColor(0, 0, 0)
 
-    # Code goes here
-
-    document.save(f"Outputs/{title}/{name}")
-
-
-def nominal_report(sample, name):
-    name += ".docx"
-    title = sample.name
-
-    os.makedirs(f"Outputs/{title}", exist_ok=True)
-
-    document = Document()
-
-    header = document.add_heading(title, 0)
-    for run in header.runs:
-        run.font.name = "Arial"
-        run.font.size = Pt(14)
-        run.font.color.rgb = RGBColor(0, 0, 0)
-
-    # Code goes here
-
-    document.save(f"Outputs/{title}/{name}")
+def nominal_summary(sample, nominal_variable):
+    return ["hi"]
 
 
 def write_xlsx(sample, name):
