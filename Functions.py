@@ -70,7 +70,6 @@ def analysis(file):
 
 
 def analysis_tables(sample, type):
-    s
     sample.crosstabs = pd.DataFrame()
     sample.summaries = pd.DataFrame()
 
@@ -85,15 +84,13 @@ def analysis_tables(sample, type):
     if type == "Nominal":
         ordinal_variables = [1]
     else:
-        ordinal_variables = (
-            list(
-                reversed(
-                    [
-                        key
-                        for key, measure in sample.metadata.variable_measure.items()
-                        if measure == "ordinal"
-                    ]
-                )
+        ordinal_variables = list(
+            reversed(
+                [
+                    key
+                    for key, measure in sample.metadata.variable_measure.items()
+                    if measure == "ordinal"
+                ]
             )
         )
 
@@ -117,12 +114,10 @@ def analysis_tables(sample, type):
                 sample.crosstab = ordinal_crosstab(
                     sample, nominal_variable, ordinal_variable
                 )
-                sample.summary = ordinal_summary(
-                    sample, nominal_variable, ordinal_variable
-                )
+                sample.summary = ordinal_summary(sample, ordinal_variable)
 
             sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
-            sample.summaries = pd.concat([sample.summaries, sample.summary], axis=1)
+            sample.summaries = pd.concat([sample.summaries, sample.summary], axis=0)
 
         if type == "Ordinal":
             second_header = [""] * len(sample.crosstabs.columns)
@@ -145,20 +140,31 @@ def analysis_tables(sample, type):
                 sample,
                 document_title(
                     sample,
-                    "Tables",
                     type,
                     sample.metadata.column_labels[
                         sample.metadata.column_names.index(nominal_variable)
                     ],
                 ),
             )
-            # write_docx(sample,document_title(sample,"Tables",type,sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],),variable=sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],)
+            write_docx(
+                sample,
+                document_title(
+                    sample,
+                    type,
+                    sample.metadata.column_labels[
+                        sample.metadata.column_names.index(nominal_variable)
+                    ],
+                ),
+                variable=sample.metadata.column_labels[
+                    sample.metadata.column_names.index(nominal_variable)
+                ],
+            )
             sample.crosstabs = pd.DataFrame()
             sample.summaries = pd.DataFrame()
 
     if type == "Nominal":
-        write_xlsx(sample, document_title(sample, "Tables", type, nominal_variable))
-        #write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
+        write_xlsx(sample, document_title(sample, type, nominal_variable))
+        write_docx(sample, document_title(sample, type, nominal_variable))
 
 
 def nominal_crosstab(sample, nominal_variable):
@@ -262,10 +268,8 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     return sample.crosstab
 
 
-def ordinal_summary(sample, nominal_variable, ordinal_variable):
-
+def ordinal_summary(sample, ordinal_variable):
     statement = ""
-
     sample.crosstab.set_index("Label, Values", inplace=True)
 
     label = sample.metadata.column_labels[
@@ -282,38 +286,37 @@ def ordinal_summary(sample, nominal_variable, ordinal_variable):
         value2 = sample.crosstab.columns[index_two]
 
         if type(sample.crosstab.iloc[0, index_dif]) == str:
-
             likeness, plurality1, plurality2 = plurality_comparison(
-                sample.crosstab.iloc[:-1, index_one], sample.crosstab.iloc[:-1, index_two]
+                sample.crosstab.iloc[:-1, index_one],
+                sample.crosstab.iloc[:-1, index_two],
             )
-            
+
             difference = mean_comparison(sample, sample.crosstab.iloc[0, index_dif])
 
             if sample.paired:
                 if value.split(" (")[0] == "All":
-                    statement += f"{sample.one.group} ({value.split(' (')[1]} responded to the statement, \"{label}\". Among {sample.one.group},"
+                    statement += f"{sample.one.group} ({value.split(' (')[1]} responded to the statement, \"{label}\". The"
                 else:
-                    statement += f" Among those who selected \"{value.split(' (')[0]}\" ({value.split(' (')[1]},"
-                statement += f" the average response {difference} between {sample.one.time} and {sample.two.time}. At {sample.two.time}, there was {plurality2} among this group, {likeness} at {sample.one.time} {plurality1}"
-                if likeness == "unlike":
-                    statement += f" when there was {plurality2}"
+                    statement += f" Among those who selected \"{value.split(' (')[0]}\" ({value.split(' (')[1]}, the"
+                statement += f" average response {difference} between {sample.one.time} and {sample.two.time}. At {sample.two.time}, there was {plurality2} among this group, {likeness} at {sample.one.time} {plurality1}"
                 statement += f"."
             else:
                 if value.split(" (")[0] == "All":
-                    statement += f"{sample.one.name} ({value.split(' (')[1]} and {sample.two.name} ({value2.split(' (')[1]} respond to the statement, \"{label}\". There"
+                    statement += f'{sample.one.name} and {sample.two.name} responded to the statement, "{label}". There'
                 else:
-                    statement += f"Among those who selected \"{value.split(' (')[0]}\" ({value.split(' (')[1]}, ({value.split(' (')[1]} and ({value2.split(' (')[1]} respectively, there"
-                statement += f" was a {difference} difference in the average response between {sample.one.name} and {sample.two.name}. Among {sample.one.group}, there was {plurality1}, {likeness} {sample.two.group} {plurality2}"
-                if likeness == "unlike":
-                    statement += f" which had {plurality2}"
+                    statement += (
+                        f" Among those who selected \"{value.split(' (')[0]}\", there"
+                    )
+                statement += f" {difference} in the average response between {sample.one.name} ({value.split(' (')[1]} and {sample.two.name} ({value2.split(' (')[1]}. Among {sample.two.group}, there was {plurality2}, {likeness} {sample.one.group} {plurality1}"
                 statement += f"."
-
-    return pd.DataFrame([ordinal_variable, statement])
+    if len(statement) == 0:
+        statement = "Insufficient data to generate prose summary."
+    return pd.DataFrame([ordinal_variable, statement]).T
 
 
 def nominal_summary(sample, nominal_variable):
-    statement = "hi"
-    return pd.DataFrame([nominal_variable, statement])
+    statement = ""
+    return pd.DataFrame([nominal_variable, statement]).T
 
 
 def write_xlsx(sample, name):
@@ -329,7 +332,10 @@ def write_xlsx(sample, name):
     sample.crosstabs.index = [pd.NA] * len(sample.crosstabs)
 
     sample.crosstabs.to_excel(
-        f"Outputs/{title}/{name}", sheet_name=sheet_name, index=True, header=True
+        f"Outputs/{title}/Tables - {name}",
+        sheet_name=sheet_name,
+        index=True,
+        header=True,
     )
 
 
@@ -362,40 +368,61 @@ def write_docx(sample, name, variable=None):
 
     sample.crosstabs.fillna("", inplace=True)
 
-    rows, cols = sample.crosstabs.shape
-    table = document.add_table(rows=rows + 2, cols=cols)
-    table.style = "Medium List 2"
+    document_summaries = document
+    rows, cols = sample.summaries.shape
+    table_summaries = document_summaries.add_table(rows=rows + 2, cols=cols)
+    table_summaries.style = "Medium List 2"
 
-    for i, column in enumerate(sample.crosstabs.columns):
-        cell = table.cell(0, i)
-        for p in cell.paragraphs:
-            p.clear()
-        cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        if isinstance(column, tuple):
-            p1 = cell.add_paragraph(str(column[0]))
-            set_font(p1)
-            p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    if 1 == 0:
+        rows, cols = sample.crosstabs.shape
+        table = document.add_table(rows=rows + 2, cols=cols)
+        table.style = "Medium List 2"
 
-            split = str(column[1]).find("(n = ")
-            if split != -1:
-                parts = [str(column[1])[: split - 1], str(column[1])[split:]]
-                for part in parts:
-                    p = cell.add_paragraph(part)
-                    set_font(p)
-                    p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        for i, column in enumerate(sample.crosstabs.columns):
+            cell = table.cell(0, i)
+            for p in cell.paragraphs:
+                p.clear()
+            cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            if isinstance(column, tuple):
+                p1 = cell.add_paragraph(str(column[0]))
+                set_font(p1)
+                p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+                split = str(column[1]).find("(n = ")
+                if split != -1:
+                    parts = [str(column[1])[: split - 1], str(column[1])[split:]]
+                    for part in parts:
+                        p = cell.add_paragraph(part)
+                        set_font(p)
+                        p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                else:
+                    p2 = cell.add_paragraph(str(column[1]))
+                    set_font(p2)
+                    p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
             else:
-                p2 = cell.add_paragraph(str(column[1]))
-                set_font(p2)
-                p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        else:
-            p = cell.add_paragraph(str(column))
-            set_font(p)
-            p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                p = cell.add_paragraph(str(column))
+                set_font(p)
+                p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-    for i, row in enumerate(sample.crosstabs.iterrows()):
+        for i, row in enumerate(sample.crosstabs.iterrows()):
+            data = row[1]
+            for j, value in enumerate(data):
+                cell = table.cell(i + 1, j)
+                cell.text = str(value)
+                set_font(cell)
+
+                for paragraph in cell.paragraphs:
+                    if j < 2:
+                        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                    else:
+                        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+                vertical_alignment(cell)
+
+    for i, row in enumerate(sample.summaries.iterrows()):
         data = row[1]
         for j, value in enumerate(data):
-            cell = table.cell(i + 1, j)
+            cell = table_summaries.cell(i + 1, j)
             cell.text = str(value)
             set_font(cell)
 
@@ -407,7 +434,8 @@ def write_docx(sample, name, variable=None):
 
             vertical_alignment(cell)
 
-    document.save(f"Outputs/{title}/{name}")
+    document.save(f"Outputs/{title}/Tables - {name}")
+    document_summaries.save(f"Outputs/{title}/Report - {name}")
 
 
 def create_crosstab(type, data, index, columns, weight, labels=None):
@@ -469,19 +497,23 @@ def add_crosstab_tests(sample, nominal_variable, ordinal_variable):
             0, crosstab_index + 2 * len(sample.one.crosstab.columns)
         ] = mean_difference
 
-        filter_samplesize = add_sample_size(
+        crosstab_header = sample.crosstab.columns.tolist()
+        crosstab_header[
+            crosstab_index + 0 * len(sample.one.crosstab.columns)
+        ] = add_sample_size(
             filter,
             sample.one.values
             if filter == "All"
             else sample.one.values[sample.one.labels[nominal_variable] == filter],
         )
-        crosstab_header = sample.crosstab.columns.tolist()
-        crosstab_header[
-            crosstab_index + 0 * len(sample.one.crosstab.columns)
-        ] = filter_samplesize
         crosstab_header[
             crosstab_index + 1 * len(sample.one.crosstab.columns)
-        ] = filter_samplesize
+        ] = add_sample_size(
+            filter,
+            sample.two.values
+            if filter == "All"
+            else sample.two.values[sample.two.labels[nominal_variable] == filter],
+        )
         sample.crosstab.columns = sample.means.columns = pd.Index(crosstab_header)
 
     return combine_crosstabs(sample.means, sample.crosstab)
@@ -619,11 +651,11 @@ def full_entries(sample, ordinal_variable):
     return sample
 
 
-def document_title(sample, kind, type, nominal_variable):
+def document_title(sample, type, nominal_variable):
     if type == "Nominal":
-        return " - ".join([kind, f"{type} Variables", sample.name])
+        return " - ".join([f"{type} Variables", sample.name])
     else:
-        return " - ".join([kind, f"{type} Variables", sample.name, nominal_variable])
+        return " - ".join([f"{type} Variables", sample.name, nominal_variable])
 
 
 def comparison_name(sample1, sample2):
@@ -688,18 +720,18 @@ def mean_comparison(sample, difference):
             return f"did not change significantly (P = {P})"
     else:
         if P < 0.05:
-            return f"were significantly different by {difference}"
+            return f"was a significant difference by {difference}"
         else:
-            return f"were not sigificantly different (P = {P})"
+            return f"was not a significant (P = {P}) difference"
 
 
 def plurality(percentages):
     value = percentages.str.rstrip("%").astype(float).idxmax()
     numeric = float(percentages[value].rstrip("%"))
 
-    if numeric < 0.5:
+    if numeric / 100 < 0.5:
         kind = "plurality"
-    elif numeric < 2 / 3:
+    elif numeric / 100 > 2 / 3:
         kind = "supermajority"
     else:
         kind = "majority"
@@ -741,4 +773,4 @@ class subsample:
         )
 
 
-analysis("Dataset.sav")
+analysis("Dataset copy.sav")
