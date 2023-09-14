@@ -70,8 +70,9 @@ def analysis(file):
 
 
 def analysis_tables(sample, type):
+    s
     sample.crosstabs = pd.DataFrame()
-    sample.summaries = ["Strart", "ssd"]
+    sample.summaries = pd.DataFrame()
 
     sample.metadata.variable_measure.pop("Group", None)
     sample.metadata.variable_measure.pop("Time", None)
@@ -84,13 +85,15 @@ def analysis_tables(sample, type):
     if type == "Nominal":
         ordinal_variables = [1]
     else:
-        ordinal_variables = list(
-            reversed(
-                [
-                    key
-                    for key, measure in sample.metadata.variable_measure.items()
-                    if measure == "ordinal"
-                ]
+        ordinal_variables = (
+            list(
+                reversed(
+                    [
+                        key
+                        for key, measure in sample.metadata.variable_measure.items()
+                        if measure == "ordinal"
+                    ]
+                )
             )
         )
 
@@ -119,7 +122,7 @@ def analysis_tables(sample, type):
                 )
 
             sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
-            sample.summaries = sample.summaries + sample.summary
+            sample.summaries = pd.concat([sample.summaries, sample.summary], axis=1)
 
         if type == "Ordinal":
             second_header = [""] * len(sample.crosstabs.columns)
@@ -151,11 +154,11 @@ def analysis_tables(sample, type):
             )
             # write_docx(sample,document_title(sample,"Tables",type,sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],),variable=sample.metadata.column_labels[sample.metadata.column_names.index(nominal_variable)],)
             sample.crosstabs = pd.DataFrame()
-            sample.summaries = ["Strart", "ssd"]
+            sample.summaries = pd.DataFrame()
 
     if type == "Nominal":
         write_xlsx(sample, document_title(sample, "Tables", type, nominal_variable))
-        # write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
+        #write_docx(sample, document_title(sample, "Tables", type, nominal_variable))
 
 
 def nominal_crosstab(sample, nominal_variable):
@@ -261,39 +264,56 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
 
 def ordinal_summary(sample, nominal_variable, ordinal_variable):
 
-    label = sample.metadata.column_labels[sample.metadata.column_names.index(ordinal_variable)]
+    statement = ""
 
-    plurality1 = "a majority response of 'Favor'"
-    plurality2 = "a majority response of 'Oppose'"
-    likeness = "unlike"
-    change_difference = "increased significantly by 0.123 (P=0.043)"
-    value = "Male"
+    sample.crosstab.set_index("Label, Values", inplace=True)
 
-    if sample.paired:
-        if value == "All":
-            statement = f"{sample.one.group} respond to the statement, {label}. Among {sample.one.name},"
-        else:
-            statement += f"Among those who selected {value},"
-        statement += f" the average response {change_difference} between {sample.one.time} and {sample.two.time}. At {sample.one.time}, there was {plurality1} among this group, {likeness} at {sample.two.time}"
-        if likeness == "unlike":
-            statement += f" when there was {plurality2}"
-        statement += f"."
-    else:
-        if value == "All":
-            statement = f"{sample.one.name} and {sample.two.name} respond to the statement, {label}. There"
-        else:
-            statement += f"Among those who selected {value}, there"
-        statement += f" was a {change_difference} difference in the average response between {sample.one.name} and {sample.two.name}. Among {sample.one.group}, there was {plurality1}, {likeness} {sample.two.group}"
-        if likeness == "unlike":
-            statement += f" which had {plurality2}"
-        statement += f"."
-    
-    s
-    return statement
+    label = sample.metadata.column_labels[
+        sample.metadata.column_names.index(ordinal_variable)
+    ]
+
+    length = int((len(sample.crosstab.columns) - 1) / 3)
+
+    for value in sample.crosstab.columns[1 : 1 + length]:
+        index_one = list(sample.crosstab.columns).index(value)
+        index_two = index_one + length
+        index_dif = index_two + length
+
+        value2 = sample.crosstab.columns[index_two]
+
+        if type(sample.crosstab.iloc[0, index_dif]) == str:
+
+            likeness, plurality1, plurality2 = plurality_comparison(
+                sample.crosstab.iloc[:-1, index_one], sample.crosstab.iloc[:-1, index_two]
+            )
+            
+            difference = mean_comparison(sample, sample.crosstab.iloc[0, index_dif])
+
+            if sample.paired:
+                if value.split(" (")[0] == "All":
+                    statement += f"{sample.one.group} ({value.split(' (')[1]} responded to the statement, \"{label}\". Among {sample.one.group},"
+                else:
+                    statement += f" Among those who selected \"{value.split(' (')[0]}\" ({value.split(' (')[1]},"
+                statement += f" the average response {difference} between {sample.one.time} and {sample.two.time}. At {sample.two.time}, there was {plurality2} among this group, {likeness} at {sample.one.time} {plurality1}"
+                if likeness == "unlike":
+                    statement += f" when there was {plurality2}"
+                statement += f"."
+            else:
+                if value.split(" (")[0] == "All":
+                    statement += f"{sample.one.name} ({value.split(' (')[1]} and {sample.two.name} ({value2.split(' (')[1]} respond to the statement, \"{label}\". There"
+                else:
+                    statement += f"Among those who selected \"{value.split(' (')[0]}\" ({value.split(' (')[1]}, ({value.split(' (')[1]} and ({value2.split(' (')[1]} respectively, there"
+                statement += f" was a {difference} difference in the average response between {sample.one.name} and {sample.two.name}. Among {sample.one.group}, there was {plurality1}, {likeness} {sample.two.group} {plurality2}"
+                if likeness == "unlike":
+                    statement += f" which had {plurality2}"
+                statement += f"."
+
+    return pd.DataFrame([ordinal_variable, statement])
 
 
 def nominal_summary(sample, nominal_variable):
-    return ["hi"]
+    statement = "hi"
+    return pd.DataFrame([nominal_variable, statement])
 
 
 def write_xlsx(sample, name):
@@ -645,6 +665,62 @@ def vertical_alignment(cell, align="bottom"):
     vAlign = OxmlElement("w:vAlign")
     vAlign.set(qn("w:val"), align)
     tcPr.append(vAlign)
+
+
+def mean_comparison(sample, difference):
+    numeric = float(difference.split(" (")[0])
+    if "P =" in difference:
+        P = float(difference.split("P = ")[1][:-1])
+    else:
+        P = 1
+
+    if numeric < 0:
+        change = "decreased"
+    elif numeric > 0:
+        change = "increased"
+    else:
+        change = "did not change"
+
+    if sample.paired:
+        if P < 0.05:
+            return f"{change} significantly by {difference}"
+        else:
+            return f"did not change significantly (P = {P})"
+    else:
+        if P < 0.05:
+            return f"were significantly different by {difference}"
+        else:
+            return f"were not sigificantly different (P = {P})"
+
+
+def plurality(percentages):
+    value = percentages.str.rstrip("%").astype(float).idxmax()
+    numeric = float(percentages[value].rstrip("%"))
+
+    if numeric < 0.5:
+        kind = "plurality"
+    elif numeric < 2 / 3:
+        kind = "supermajority"
+    else:
+        kind = "majority"
+
+    return value, numeric, kind
+
+
+def plurality_comparison(percentages1, percentages2):
+    value1, numeric1, kind1 = plurality(percentages1)
+    value2, numeric2, kind2 = plurality(percentages2)
+
+    if kind1 == kind2:
+        likeness = "like"
+        plurality1 = f"({numeric1}%)"
+    else:
+        likeness = "unlike"
+        plurality1 = f'a {kind1} response of "{value1}" ({numeric1}%)'
+
+    plurality2 = f'a {kind2} response of "{value2}" ({numeric2}%)'
+
+    return likeness, plurality1, plurality2
 
 
 class subsample:
