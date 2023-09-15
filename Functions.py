@@ -71,7 +71,7 @@ def analysis(file):
 
 def analysis_tables(sample, type):
     sample.crosstabs = pd.DataFrame()
-    sample.summaries = pd.DataFrame()
+    sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
 
     sample.metadata.variable_measure.pop("Group", None)
     sample.metadata.variable_measure.pop("Time", None)
@@ -117,6 +117,7 @@ def analysis_tables(sample, type):
                 sample.summary = ordinal_summary(sample, ordinal_variable)
 
             sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
+            sample.summary.columns = sample.summaries.columns
             sample.summaries = pd.concat([sample.summaries, sample.summary], axis=0)
 
         if type == "Ordinal":
@@ -338,27 +339,36 @@ def write_xlsx(sample, name):
         header=True,
     )
 
+    sample.summaries.to_excel(
+        f"Outputs/{title}/Report - {name}",
+        sheet_name=sheet_name,
+        index=False,
+        header=True,
+    )
+
 
 def write_docx(sample, name, variable=None):
+    sample.crosstabs.fillna("", inplace=True)
+
     name += ".docx"
     title = sample.name
+
+    if variable == None:
+        header = title
+    else:
+        header = f"{title} by {variable}"
 
     os.makedirs(f"Outputs/{title}", exist_ok=True)
 
     document = Document()
 
     section = document.sections[0]
-    section.page_width = Inches(22)
-    section.page_height = Inches(22)
+    section.page_width = Inches(8.5)
+    section.page_height = Inches(11)
     section.top_margin = Inches(0.5)
     section.bottom_margin = Inches(0.5)
     section.left_margin = Inches(0.5)
     section.right_margin = Inches(0.5)
-
-    if variable == None:
-        header = title
-    else:
-        header = f"{title} by {variable}"
 
     header = document.add_heading(header, 0)
     for run in header.runs:
@@ -366,58 +376,9 @@ def write_docx(sample, name, variable=None):
         run.font.size = Pt(14)
         run.font.color.rgb = RGBColor(0, 0, 0)
 
-    sample.crosstabs.fillna("", inplace=True)
-
-    document_summaries = document
     rows, cols = sample.summaries.shape
-    table_summaries = document_summaries.add_table(rows=rows + 2, cols=cols)
+    table_summaries = document.add_table(rows=rows + 2, cols=cols)
     table_summaries.style = "Medium List 2"
-
-    if 1 == 0:
-        rows, cols = sample.crosstabs.shape
-        table = document.add_table(rows=rows + 2, cols=cols)
-        table.style = "Medium List 2"
-
-        for i, column in enumerate(sample.crosstabs.columns):
-            cell = table.cell(0, i)
-            for p in cell.paragraphs:
-                p.clear()
-            cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            if isinstance(column, tuple):
-                p1 = cell.add_paragraph(str(column[0]))
-                set_font(p1)
-                p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-
-                split = str(column[1]).find("(n = ")
-                if split != -1:
-                    parts = [str(column[1])[: split - 1], str(column[1])[split:]]
-                    for part in parts:
-                        p = cell.add_paragraph(part)
-                        set_font(p)
-                        p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-                else:
-                    p2 = cell.add_paragraph(str(column[1]))
-                    set_font(p2)
-                    p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            else:
-                p = cell.add_paragraph(str(column))
-                set_font(p)
-                p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-
-        for i, row in enumerate(sample.crosstabs.iterrows()):
-            data = row[1]
-            for j, value in enumerate(data):
-                cell = table.cell(i + 1, j)
-                cell.text = str(value)
-                set_font(cell)
-
-                for paragraph in cell.paragraphs:
-                    if j < 2:
-                        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
-                    else:
-                        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-
-                vertical_alignment(cell)
 
     for i, row in enumerate(sample.summaries.iterrows()):
         data = row[1]
@@ -434,8 +395,70 @@ def write_docx(sample, name, variable=None):
 
             vertical_alignment(cell)
 
+    document.save(f"Outputs/{title}/Report - {name}")
+
+    document = Document()
+
+    section = document.sections[0]
+    section.page_width = Inches(22)
+    section.page_height = Inches(22)
+    section.top_margin = Inches(0.5)
+    section.bottom_margin = Inches(0.5)
+    section.left_margin = Inches(0.5)
+    section.right_margin = Inches(0.5)
+
+    header = document.add_heading(header, 0)
+    for run in header.runs:
+        run.font.name = "Arial"
+        run.font.size = Pt(14)
+        run.font.color.rgb = RGBColor(0, 0, 0)
+
+    rows, cols = sample.crosstabs.shape
+    table = document.add_table(rows=rows + 2, cols=cols)
+    table.style = "Medium List 2"
+
+    for i, column in enumerate(sample.crosstabs.columns):
+        cell = table.cell(0, i)
+        for p in cell.paragraphs:
+            p.clear()
+        cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        if isinstance(column, tuple):
+            p1 = cell.add_paragraph(str(column[0]))
+            set_font(p1)
+            p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+            split = str(column[1]).find("(n = ")
+            if split != -1:
+                parts = [str(column[1])[: split - 1], str(column[1])[split:]]
+                for part in parts:
+                    p = cell.add_paragraph(part)
+                    set_font(p)
+                    p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            else:
+                p2 = cell.add_paragraph(str(column[1]))
+                set_font(p2)
+                p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        else:
+            p = cell.add_paragraph(str(column))
+            set_font(p)
+            p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+    for i, row in enumerate(sample.crosstabs.iterrows()):
+        data = row[1]
+        for j, value in enumerate(data):
+            cell = table.cell(i + 1, j)
+            cell.text = str(value)
+            set_font(cell)
+
+            for paragraph in cell.paragraphs:
+                if j < 2:
+                    paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                else:
+                    paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+            vertical_alignment(cell)
+
     document.save(f"Outputs/{title}/Tables - {name}")
-    document_summaries.save(f"Outputs/{title}/Report - {name}")
 
 
 def create_crosstab(type, data, index, columns, weight, labels=None):
