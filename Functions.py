@@ -327,10 +327,15 @@ def write_xlsx(sample, name):
 
     sample.crosstabs.index = [pd.NA] * len(sample.crosstabs)
 
+    if "Ordinal" in name:
+        index = True
+    else:
+        index = False
+
     sample.crosstabs.to_excel(
         f"Outputs/{title}/Tables - {name}",
         sheet_name=sheet_name,
-        index=True,
+        index=index,
         header=True,
     )
 
@@ -384,7 +389,6 @@ def write_docx(sample, name, variable=None):
         table.style = "Medium List 2"
 
         if not len(sheet.columns) > 15:
-
             for i, column in enumerate(sheet.columns):
                 cell = table.cell(0, i)
                 for p in cell.paragraphs:
@@ -537,7 +541,9 @@ def test_chi(variable, observed, expected):
         ~np.apply_along_axis(lambda y: np.all(y == 0), 1, observed_expected)
     ]
 
-    if not sum(observed_expected[0]) == 0:
+    if not type(sum(observed_expected)) == int and not np.any(
+        np.all(observed_expected == 0, axis=0)
+    ):
         _, P, _, _ = chi2_contingency(observed_expected)
     else:
         P = np.nan
@@ -747,7 +753,7 @@ def plurality_comparison(percentages1, percentages2):
         plurality1 = f"({numeric1}%)"
     else:
         likeness = "unlike"
-        plurality1 = f'a {kind1} response of "{value1}" ({numeric1}%)'
+        plurality1 = f'which had a {kind1} response of "{value1}" ({numeric1}%)'
 
     plurality2 = f'a {kind2} response of "{value2}" ({numeric2}%)'
 
@@ -772,4 +778,4 @@ class subsample:
         )
 
 
-analysis("Dataset.sav")
+analysis("Dataset copy.sav")
