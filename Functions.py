@@ -160,7 +160,7 @@ def analysis_tables(sample, type):
                 ],
             )
             sample.crosstabs = pd.DataFrame()
-            sample.summaries = pd.DataFrame()
+            sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
 
     if type == "Nominal":
         write_xlsx(sample, document_title(sample, type, nominal_variable))
@@ -270,28 +270,29 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
 
 def ordinal_summary(sample, ordinal_variable):
     statement = ""
-    sample.crosstab.set_index("Label, Values", inplace=True)
+    crosstab = sample.crosstab.copy()
+    crosstab.set_index("Label, Values", inplace=True)
 
     label = sample.metadata.column_labels[
         sample.metadata.column_names.index(ordinal_variable)
     ]
 
-    length = int((len(sample.crosstab.columns) - 1) / 3)
+    length = int((len(crosstab.columns) - 1) / 3)
 
-    for value in sample.crosstab.columns[1 : 1 + length]:
-        index_one = list(sample.crosstab.columns).index(value)
+    for value in crosstab.columns[1 : 1 + length]:
+        index_one = list(crosstab.columns).index(value)
         index_two = index_one + length
         index_dif = index_two + length
 
-        value2 = sample.crosstab.columns[index_two]
+        value2 = crosstab.columns[index_two]
 
-        if type(sample.crosstab.iloc[0, index_dif]) == str:
+        if type(crosstab.iloc[0, index_dif]) == str:
             likeness, plurality1, plurality2 = plurality_comparison(
-                sample.crosstab.iloc[:-1, index_one],
-                sample.crosstab.iloc[:-1, index_two],
+                crosstab.iloc[1:-1, index_one],
+                crosstab.iloc[1:-1, index_two],
             )
 
-            difference = mean_comparison(sample, sample.crosstab.iloc[0, index_dif])
+            difference = mean_comparison(sample, crosstab.iloc[0, index_dif])
 
             if sample.paired:
                 if value.split(" (")[0] == "All":
@@ -333,12 +334,13 @@ def write_xlsx(sample, name):
         header=True,
     )
 
-    sample.summaries.to_excel(
-        f"Outputs/{title}/Report - {name}",
-        sheet_name=sheet_name,
-        index=False,
-        header=True,
-    )
+    if "Ordinal" in name:
+        sample.summaries.to_excel(
+            f"Outputs/{title}/Report - {name}",
+            sheet_name=sheet_name,
+            index=False,
+            header=True,
+        )
 
 
 def write_docx(sample, name, variable=None):
@@ -348,140 +350,88 @@ def write_docx(sample, name, variable=None):
     title = sample.name
 
     if variable == None:
-        header = title
+        header_text = title
     else:
-        header = f"{title} by {variable}"
+        header_text = f"{title} by {variable}"
 
     os.makedirs(f"Outputs/{title}", exist_ok=True)
 
-
-    if "Ordinal" in name:
+    for sheet in [sample.summaries, sample.crosstabs]:
         document = Document()
 
         section = document.sections[0]
-        section.page_width = Inches(8.5)
-        section.page_height = Inches(11)
+
+        if not len(sheet.columns) == 2:
+            section.page_width = Inches(22)
+            section.page_height = Inches(22)
+        else:
+            section.page_width = Inches(8.5)
+            section.page_height = Inches(11)
+
         section.top_margin = Inches(0.5)
         section.bottom_margin = Inches(0.5)
         section.left_margin = Inches(0.5)
         section.right_margin = Inches(0.5)
 
-        header = document.add_heading(header, 0)
+        header = document.add_heading(header_text, 0)
         for run in header.runs:
             run.font.name = "Arial"
             run.font.size = Pt(14)
             run.font.color.rgb = RGBColor(0, 0, 0)
 
-        rows, cols = sample.summaries.shape
+        rows, cols = sheet.shape
         table = document.add_table(rows=rows + 2, cols=cols)
         table.style = "Medium List 2"
 
-        for i, column in enumerate(sample.crosstabs.columns):
-            cell = table.cell(0, i)
-            for p in cell.paragraphs:
-                p.clear()
-            cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            if isinstance(column, tuple):
-                p1 = cell.add_paragraph(str(column[0]))
-                set_font(p1)
-                p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        if not len(sheet.columns) > 15:
 
-                split = str(column[1]).find("(n = ")
-                if split != -1:
-                    parts = [str(column[1])[: split - 1], str(column[1])[split:]]
-                    for part in parts:
-                        p = cell.add_paragraph(part)
-                        set_font(p)
-                        p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-                else:
-                    p2 = cell.add_paragraph(str(column[1]))
-                    set_font(p2)
-                    p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            else:
-                p = cell.add_paragraph(str(column))
-                set_font(p)
-                p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            for i, column in enumerate(sheet.columns):
+                cell = table.cell(0, i)
+                for p in cell.paragraphs:
+                    p.clear()
+                cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                if isinstance(column, tuple):
+                    p1 = cell.add_paragraph(str(column[0]))
+                    set_font(p1)
+                    p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-        for i, row in enumerate(sample.crosstabs.iterrows()):
-            data = row[1]
-            for j, value in enumerate(data):
-                cell = table.cell(i + 1, j)
-                cell.text = str(value)
-                set_font(cell)
-
-                for paragraph in cell.paragraphs:
-                    if j < 2:
-                        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                    split = str(column[1]).find("(n = ")
+                    if split != -1:
+                        parts = [str(column[1])[: split - 1], str(column[1])[split:]]
+                        for part in parts:
+                            p = cell.add_paragraph(part)
+                            set_font(p)
+                            p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
                     else:
-                        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-
-                vertical_alignment(cell)
-
-        document.save(f"Outputs/{title}/Report - {name}")
-
-
-    document = Document()
-
-    section = document.sections[0]
-    section.page_width = Inches(22)
-    section.page_height = Inches(22)
-    section.top_margin = Inches(0.5)
-    section.bottom_margin = Inches(0.5)
-    section.left_margin = Inches(0.5)
-    section.right_margin = Inches(0.5)
-
-    header = document.add_heading(header, 0)
-    for run in header.runs:
-        run.font.name = "Arial"
-        run.font.size = Pt(14)
-        run.font.color.rgb = RGBColor(0, 0, 0)
-
-    rows, cols = sample.crosstabs.shape
-    table = document.add_table(rows=rows + 2, cols=cols)
-    table.style = "Medium List 2"
-
-    for i, column in enumerate(sample.crosstabs.columns):
-        cell = table.cell(0, i)
-        for p in cell.paragraphs:
-            p.clear()
-        cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        if isinstance(column, tuple):
-            p1 = cell.add_paragraph(str(column[0]))
-            set_font(p1)
-            p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-
-            split = str(column[1]).find("(n = ")
-            if split != -1:
-                parts = [str(column[1])[: split - 1], str(column[1])[split:]]
-                for part in parts:
-                    p = cell.add_paragraph(part)
+                        p2 = cell.add_paragraph(str(column[1]))
+                        set_font(p2)
+                        p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                else:
+                    p = cell.add_paragraph(str(column))
                     set_font(p)
                     p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                vertical_alignment(cell)
+
+            for i, row in enumerate(sheet.iterrows()):
+                data = row[1]
+                for j, value in enumerate(data):
+                    cell = table.cell(i + 1, j)
+                    cell.text = str(value)
+                    set_font(cell)
+
+                    for paragraph in cell.paragraphs:
+                        if j < 2:
+                            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                        else:
+                            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+                    if not len(sheet.columns) == 2:
+                        vertical_alignment(cell)
+
+            if len(sheet.columns) == 2 and "Ordinal" in name:
+                document.save(f"Outputs/{title}/Report - {name}")
             else:
-                p2 = cell.add_paragraph(str(column[1]))
-                set_font(p2)
-                p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        else:
-            p = cell.add_paragraph(str(column))
-            set_font(p)
-            p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-
-    for i, row in enumerate(sample.crosstabs.iterrows()):
-        data = row[1]
-        for j, value in enumerate(data):
-            cell = table.cell(i + 1, j)
-            cell.text = str(value)
-            set_font(cell)
-
-            for paragraph in cell.paragraphs:
-                if j < 2:
-                    paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
-                else:
-                    paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-
-            vertical_alignment(cell)
-
-    document.save(f"Outputs/{title}/Tables - {name}")
+                document.save(f"Outputs/{title}/Tables - {name}")
 
 
 def create_crosstab(type, data, index, columns, weight, labels=None):
@@ -587,7 +537,10 @@ def test_chi(variable, observed, expected):
         ~np.apply_along_axis(lambda y: np.all(y == 0), 1, observed_expected)
     ]
 
-    _, P, _, _ = chi2_contingency(observed_expected)
+    if not sum(observed_expected[0]) == 0:
+        _, P, _, _ = chi2_contingency(observed_expected)
+    else:
+        P = np.nan
 
     if not np.isnan(P):
         if np.any(expected < 5):
@@ -819,4 +772,4 @@ class subsample:
         )
 
 
-analysis("Dataset copy.sav")
+analysis("Dataset.sav")
