@@ -195,7 +195,7 @@ def nominal_crosstab(sample, nominal_variable):
         add_sample_size(sample.two.name, sample.two.values[nominal_variable]),
     ]
 
-    sample.crosstab.loc[0, "Variable"] = test_chi(
+    sample.crosstab.loc[0, "Variable"] = x_test(
         variable=sample.metadata.column_labels[
             sample.metadata.column_names.index(nominal_variable)
         ],
@@ -481,7 +481,7 @@ def add_crosstab_tests(sample, nominal_variable, ordinal_variable):
     )
 
     for filter in sample.one.crosstab.columns:
-        mean1, mean2, mean_difference = test_t(
+        mean1, mean2, mean_difference = t_test(
             sample, filter, nominal_variable, ordinal_variable
         )
 
@@ -534,7 +534,7 @@ def combine_crosstabs(crosstab1, crosstab2):
     return crosstabs
 
 
-def test_chi(variable, observed, expected):
+def x_test(variable, observed, expected):
     observed_expected = np.column_stack((observed, expected))
 
     observed_expected = observed_expected[
@@ -557,7 +557,7 @@ def test_chi(variable, observed, expected):
     return variable
 
 
-def test_t(sample, filter, nominal_variable, ordinal_variable):
+def t_test(sample, filter, nominal_variable, ordinal_variable):
     sample.one.filtered = sample.one.values
     sample.two.filtered = sample.two.values
 
@@ -571,7 +571,9 @@ def test_t(sample, filter, nominal_variable, ordinal_variable):
 
     sample = full_entries(sample, ordinal_variable)
 
-    if sample.paired:
+    if sample.paired and len(sample.one.ordinal_filtered) == len(
+        sample.two.ordinal_filtered
+    ):
         P = statsmodels.stats.weightstats.DescrStatsW(
             data=sample.two.ordinal_filtered - sample.one.ordinal_filtered,
             weights=sample.one.weights_filtered,
@@ -586,21 +588,29 @@ def test_t(sample, filter, nominal_variable, ordinal_variable):
             weights=(sample.one.weights_filtered, sample.two.weights_filtered),
         )[1]
 
-    if (
-        not sum(sample.one.weights_filtered) == 0
-        and not sum(sample.two.weights_filtered) == 0
-    ):
+    if not sum(sample.one.weights_filtered) == 0:
         mean1 = np.average(
             sample.one.ordinal_filtered, weights=sample.one.weights_filtered
         )
+    else:
+        mean1 = pd.NA
+
+    if not sum(sample.two.weights_filtered) == 0:
         mean2 = np.average(
             sample.two.ordinal_filtered, weights=sample.two.weights_filtered
         )
-        mean_difference = "{:.3f}".format(mean2 - mean1)
-        mean1 = "{:.3f}".format(mean1)
-        mean2 = "{:.3f}".format(mean2)
     else:
-        mean1 = mean2 = mean_difference = pd.NA
+        mean2 = pd.NA
+
+    if not pd.isna(mean1) and not pd.isna(mean2):
+        mean_difference = "{:.3f}".format(mean2 - mean1)
+    else:
+        mean_difference = pd.NA
+
+    if not pd.isna(mean1):
+        mean1 = "{:.3f}".format(mean1)
+    if not pd.isna(mean2):
+        mean2 = "{:.3f}".format(mean2)
 
     if not np.isnan(P):
         mean_difference = f"{mean_difference} (P = {P:.3f})"
@@ -609,7 +619,11 @@ def test_t(sample, filter, nominal_variable, ordinal_variable):
 
 
 def full_entries(sample, ordinal_variable):
-    if sample.paired:
+    if (
+        sample.paired
+        and not all(np.isnan(value) for value in sample.one.filtered[ordinal_variable])
+        and not all(np.isnan(value) for value in sample.two.filtered[ordinal_variable])
+    ):
         complete_cases = pd.concat(
             (
                 sample.one.filtered[ordinal_variable],
