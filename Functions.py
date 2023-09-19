@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 import numpy as np
 import warnings
@@ -29,6 +30,13 @@ def analysis(file):
     weights = ["Unweighted"] + [
         var for var in scale_variables if "weight" in var.lower()
     ]
+    
+    for variable in ["Time", "Group", "ID"]:
+        if variable not in values:
+            raise ValueError(f'"{variable}" variable not found.')
+
+        if values[variable].isna().any():
+            raise ValueError(f'Empty cells in "{variable}" variable found.')
 
     sample_comparisons = [
         comb
@@ -54,14 +62,23 @@ def analysis(file):
             two = subsample(
                 combination[1][0], combination[1][1], combination[1][2], values, labels
             )
-            name = comparison_name(one, two)
+            all_values = values
+            all_labels = labels
             metadata = codebook
+            name = comparison_name(one, two)
             paired = one.group + one.weight == two.group + two.weight
+        
+        if sample.one.values["ID"].duplicated().any():
+            raise ValueError(f'Duplicate IDs in "{sample.one.name}" found.')
+        if sample.two.values["ID"].duplicated().any():
+            raise ValueError(f'Duplicate IDs in "{sample.two.name}" found.')
+        if sample.paired and len(set(sample.one.values["ID"]).intersection(set(sample.two.values["ID"]))) == 0:
+            raise ValueError(f'No shared IDs between "{sample.one.name}" and "{sample.two.name}" were found. If the samples are not the same experimental group, they should not share the group name "{sample.one.group}".')
 
-        sample.one.values.set_index(sample.one.values["IDs"], inplace=True)
-        sample.two.values.set_index(sample.two.values["IDs"], inplace=True)
-        sample.one.labels.set_index(sample.one.values["IDs"], inplace=True)
-        sample.two.labels.set_index(sample.two.values["IDs"], inplace=True)
+        sample.one.values.set_index(sample.one.values["ID"], inplace=True)
+        sample.two.values.set_index(sample.two.values["ID"], inplace=True)
+        sample.one.labels.set_index(sample.one.values["ID"], inplace=True)
+        sample.two.labels.set_index(sample.two.values["ID"], inplace=True)
 
         analysis_tables(sample, "Nominal")
         analysis_tables(sample, "Ordinal")
@@ -75,11 +92,13 @@ def analysis_tables(sample, type):
 
     sample.metadata.variable_measure.pop("Group", None)
     sample.metadata.variable_measure.pop("Time", None)
+    sample.metadata.variable_measure.pop("ID", None)
     nominal_variables = [
         key
         for key, measure in sample.metadata.variable_measure.items()
         if measure == "nominal"
     ]
+    check_labels(sample, nominal_variables)
 
     if type == "Nominal":
         ordinal_variables = [1]
@@ -93,6 +112,12 @@ def analysis_tables(sample, type):
                 ]
             )
         )
+        check_labels(sample, ordinal_variables)
+    
+    if len(nominal_variables) == 0:
+        raise ValueError(f'Nominal variables not found.')
+    if len(ordinal_variables) == 0:
+        raise ValueError(f'Ordinal variables not found.')
 
     for nominal_variable in tqdm(
         nominal_variables,
@@ -248,8 +273,12 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
         ],
         axis=1,
     )
+
     sample.crosstab = (
-        sample.crosstab.round(1).apply(lambda x: x).applymap(lambda x: f"{x}%")
+        sample.crosstab.fillna(0)
+        .round(1)
+        .apply(lambda x: x)
+        .applymap(lambda x: f"{x}%")
     )
 
     sample.crosstab = add_crosstab_tests(sample, nominal_variable, ordinal_variable)
@@ -349,7 +378,10 @@ def write_xlsx(sample, name):
 
 
 def write_docx(sample, name, variable=None):
-    sample.crosstabs.fillna("", inplace=True)
+    try:
+        sample.crosstabs.fillna("", inplace=True)
+    except TypeError:
+        pass
 
     name += ".docx"
     title = sample.name
@@ -535,6 +567,10 @@ def combine_crosstabs(crosstab1, crosstab2):
 
 
 def x_test(variable, observed, expected):
+    combined_index = observed.index.union(expected.index)
+    observed = observed.reindex(combined_index, fill_value=0)
+    expected = expected.reindex(combined_index, fill_value=0)
+
     observed_expected = np.column_stack((observed, expected))
 
     observed_expected = observed_expected[
@@ -670,11 +706,11 @@ def full_entries(sample, ordinal_variable):
     return sample
 
 
-def document_title(sample, type, nominal_variable):
+def document_title(sample, type, variable):
     if type == "Nominal":
         return " - ".join([f"{type} Variables", sample.name])
     else:
-        return " - ".join([f"{type} Variables", sample.name, nominal_variable])
+        return " - ".join([f"{type} Variables", sample.name, variable])
 
 
 def comparison_name(sample1, sample2):
@@ -699,7 +735,7 @@ def add_sample_size(variable, sample):
 
 
 def set_font(item):
-    if hasattr(item, "paragraphs"):  # Check if it's a cell
+    if hasattr(item, "paragraphs"):
         for paragraph in item.paragraphs:
             for run in paragraph.runs:
                 run.font.name = "Arial"
@@ -774,6 +810,25 @@ def plurality_comparison(percentages1, percentages2):
     return likeness, plurality1, plurality2
 
 
+def check_labels(sample, variables):
+    for variable in variables:
+        if not variable in sample.metadata.variable_value_labels:
+            raise ValueError(f'Value labels for variable "{variable}" not found.')
+
+        missing_categories = [
+            category
+            for category in sample.all_labels[variable].cat.categories
+            if category not in sample.metadata.variable_value_labels[variable].values()
+        ]
+        if len(missing_categories) > 0:
+            raise ValueError(
+                f'Value labels {missing_categories} for variable "{variable}" not found.'
+            )
+        
+        if type(sample.metadata.column_labels[sample.metadata.column_names.index(variable)]) is type(None):
+            raise ValueError(f'Column label for variable "{variable}" not found.')
+
+
 class subsample:
     def __init__(self, group, time, weight, values, labels):
         self.group = group
@@ -792,4 +847,4 @@ class subsample:
         )
 
 
-analysis("Dataset copy.sav")
+analysis("Errors.sav")
