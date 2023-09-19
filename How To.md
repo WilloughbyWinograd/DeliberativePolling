@@ -1,4 +1,4 @@
-## How To: Analyzing Survey Data
+# How To
 
 ### Objective
 This guide is designed to assist professionals in efficiently leveraging a Python package tailored for the analysis of survey data in Deliberative Polling experiments.
