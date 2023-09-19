@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore")
 
 
 def analysis(file):
-    assert file.lower().endswith(".sav"), "File must be an SPSS .SAV file."
+    assert file.lower().endswith(".sav"), "File must be a .SAV file from IBM SPSS Statistics."
 
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
