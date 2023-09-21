@@ -24,7 +24,7 @@ def outputs(file):
     """
     assert file.lower().endswith(
         ".sav"
-    ), "File must be a .SAV file from IBM SPSS Statistics."
+    ), 'File must be a .SAV file from IBM SPSS Statistics. See pypi.org/project/DeliberativePolling for "How To" guide for this package.'
 
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
@@ -38,7 +38,7 @@ def outputs(file):
 
     for variable in ["Time", "Group", "ID"]:
         if variable not in values:
-            raise ValueError(f'"{variable}" variable not found.')
+            raise ValueError(f'"{variable}" variable not found. See pypi.org/project/DeliberativePolling for "How To" guide for this package.')
 
         if values[variable].isna().any():
             raise ValueError(f'Empty cells in "{variable}" variable found.')
