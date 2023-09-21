@@ -1,5 +1,4 @@
 import os
-import sys
 import pandas as pd
 import numpy as np
 import warnings
@@ -19,7 +18,9 @@ warnings.filterwarnings("ignore")
 
 
 def analysis(file):
-    assert file.lower().endswith(".sav"), "File must be a .SAV file from IBM SPSS Statistics."
+    assert file.lower().endswith(
+        ".sav"
+    ), "File must be a .SAV file from IBM SPSS Statistics."
 
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
@@ -30,7 +31,7 @@ def analysis(file):
     weights = ["Unweighted"] + [
         var for var in scale_variables if "weight" in var.lower()
     ]
-    
+
     for variable in ["Time", "Group", "ID"]:
         if variable not in values:
             raise ValueError(f'"{variable}" variable not found.')
@@ -67,13 +68,21 @@ def analysis(file):
             metadata = codebook
             name = comparison_name(one, two)
             paired = one.group + one.weight == two.group + two.weight
-        
+
         if sample.one.values["ID"].duplicated().any():
             raise ValueError(f'Duplicate IDs in "{sample.one.name}" found.')
         if sample.two.values["ID"].duplicated().any():
             raise ValueError(f'Duplicate IDs in "{sample.two.name}" found.')
-        if sample.paired and len(set(sample.one.values["ID"]).intersection(set(sample.two.values["ID"]))) == 0:
-            raise ValueError(f'No shared IDs between "{sample.one.name}" and "{sample.two.name}" were found. If the samples are not the same experimental group, they should not share the group name "{sample.one.group}".')
+        if (
+            sample.paired
+            and len(
+                set(sample.one.values["ID"]).intersection(set(sample.two.values["ID"]))
+            )
+            == 0
+        ):
+            raise ValueError(
+                f'No shared IDs between "{sample.one.name}" and "{sample.two.name}" were found. If the samples are not the same experimental group, they should not share the group name "{sample.one.group}".'
+            )
 
         sample.one.values.set_index(sample.one.values["ID"], inplace=True)
         sample.two.values.set_index(sample.two.values["ID"], inplace=True)
@@ -113,11 +122,11 @@ def analysis_tables(sample, type):
             )
         )
         check_labels(sample, ordinal_variables)
-    
+
     if len(nominal_variables) == 0:
-        raise ValueError(f'Nominal variables not found.')
+        raise ValueError(f"Nominal variables not found.")
     if len(ordinal_variables) == 0:
-        raise ValueError(f'Ordinal variables not found.')
+        raise ValueError(f"Ordinal variables not found.")
 
     for nominal_variable in tqdm(
         nominal_variables,
@@ -125,71 +134,81 @@ def analysis_tables(sample, type):
         desc="Comparing Nominal Variables",
         leave=False,
     ):
-        for ordinal_variable in tqdm(
-            ordinal_variables,
-            position=2,
-            desc="Comparing Ordinal Variables",
-            leave=False,
-            total=len(ordinal_variables),
+        if sample.paired and any(
+            sample.one.values[nominal_variable] != sample.two.values[nominal_variable]
         ):
-            if type == "Nominal":
-                sample.crosstab = nominal_crosstab(sample, nominal_variable)
+            variations = [f" ({sample.one.time})", f" ({sample.two.time})"]
+
+            sample.one.values.original_nominal = sample.one.values[nominal_variable]
+            sample.two.values.original_nominal = sample.two.values[nominal_variable]
+            sample.one.labels.original_nominal = sample.one.labels[nominal_variable]
+            sample.two.labels.original_nominal = sample.two.labels[nominal_variable]
+
+        else:
+            variations = [""]
+
+        for variation in variations:
+            if variations.index(variation) == 0:
+                sample.two.values[nominal_variable] = sample.one.values.original_nominal
+                sample.two.labels[nominal_variable] = sample.one.labels.original_nominal
+
+            if variations.index(variation) == 1:
+                sample.one.values[nominal_variable] = sample.two.values.original_nominal
+                sample.one.labels[nominal_variable] = sample.one.labels.original_nominal
+
+            for ordinal_variable in tqdm(
+                ordinal_variables,
+                position=2,
+                desc="Comparing Ordinal Variables",
+                leave=False,
+                total=len(ordinal_variables),
+            ):
+                if type == "Nominal":
+                    sample.crosstab = nominal_crosstab(sample, nominal_variable)
+                if type == "Ordinal":
+                    sample.crosstab = ordinal_crosstab(
+                        sample, nominal_variable, ordinal_variable
+                    )
+                    sample.summary = ordinal_summary(sample, ordinal_variable)
+                    sample.summary.columns = sample.summaries.columns
+                    sample.summaries = pd.concat(
+                        [sample.summary, sample.summaries], axis=0
+                    )
+
+                sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
+
             if type == "Ordinal":
-                sample.crosstab = ordinal_crosstab(
-                    sample, nominal_variable, ordinal_variable
+                second_header = [""] * len(sample.crosstabs.columns)
+                second_header[2] = sample.one.name
+                second_header[
+                    int((len(sample.crosstabs.columns) - 2) / 3) + 2
+                ] = sample.two.name
+                second_header[
+                    int((len(sample.crosstabs.columns) - 2) / 3) * 2 + 2
+                ] = "Difference"
+                multi_col = pd.MultiIndex.from_tuples(
+                    [
+                        (second_header[i], col)
+                        for i, col in enumerate(sample.crosstabs.columns)
+                    ]
                 )
-                sample.summary = ordinal_summary(sample, ordinal_variable)
-                sample.summary.columns = sample.summaries.columns
-                sample.summaries = pd.concat([sample.summary, sample.summaries], axis=0)
+                sample.crosstabs.columns = multi_col
 
-            sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
-
-        if type == "Ordinal":
-            second_header = [""] * len(sample.crosstabs.columns)
-            second_header[2] = sample.one.name
-            second_header[
-                int((len(sample.crosstabs.columns) - 2) / 3) + 2
-            ] = sample.two.name
-            second_header[
-                int((len(sample.crosstabs.columns) - 2) / 3) * 2 + 2
-            ] = "Difference"
-            multi_col = pd.MultiIndex.from_tuples(
-                [
-                    (second_header[i], col)
-                    for i, col in enumerate(sample.crosstabs.columns)
-                ]
-            )
-            sample.crosstabs.columns = multi_col
-
-            write_xlsx(
-                sample,
-                document_title(
-                    sample,
-                    type,
-                    sample.metadata.column_labels[
-                        sample.metadata.column_names.index(nominal_variable)
-                    ],
-                ),
-            )
-            write_docx(
-                sample,
-                document_title(
-                    sample,
-                    type,
-                    sample.metadata.column_labels[
-                        sample.metadata.column_names.index(nominal_variable)
-                    ],
-                ),
-                variable=sample.metadata.column_labels[
+                variable = sample.metadata.column_labels[
                     sample.metadata.column_names.index(nominal_variable)
-                ],
-            )
-            sample.crosstabs = pd.DataFrame()
-            sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
+                ]
+                name = document_title(sample, type, variable) + variation
+
+                write_xlsx(sample, name)
+                write_docx(sample, name, variable)
+                sample.crosstabs = pd.DataFrame()
+                sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
 
     if type == "Nominal":
-        write_xlsx(sample, document_title(sample, type, nominal_variable))
-        write_docx(sample, document_title(sample, type, nominal_variable))
+        name = document_title(sample, type, nominal_variable)
+
+        write_xlsx(sample, name)
+        write_docx(sample, name)
 
 
 def nominal_crosstab(sample, nominal_variable):
@@ -824,8 +843,10 @@ def check_labels(sample, variables):
             raise ValueError(
                 f'Value labels {missing_categories} for variable "{variable}" not found.'
             )
-        
-        if type(sample.metadata.column_labels[sample.metadata.column_names.index(variable)]) is type(None):
+
+        if type(
+            sample.metadata.column_labels[sample.metadata.column_names.index(variable)]
+        ) is type(None):
             raise ValueError(f'Column label for variable "{variable}" not found.')
 
 
@@ -847,4 +868,4 @@ class subsample:
         )
 
 
-analysis("Errors.sav")
+analysis("Dataset copy.sav")
