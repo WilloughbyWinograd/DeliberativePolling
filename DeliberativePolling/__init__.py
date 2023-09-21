@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore")
 
 def analysis(file):
     """
-    Hi
+    
     """
     assert file.lower().endswith(
         ".sav"
