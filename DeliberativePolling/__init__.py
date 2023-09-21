@@ -38,7 +38,9 @@ def outputs(file):
 
     for variable in ["Time", "Group", "ID"]:
         if variable not in values:
-            raise ValueError(f'"{variable}" variable not found. See pypi.org/project/DeliberativePolling for "How To" guide for this package.')
+            raise ValueError(
+                f'"{variable}" variable not found. See pypi.org/project/DeliberativePolling for "How To" guide for this package.'
+            )
 
         if values[variable].isna().any():
             raise ValueError(f'Empty cells in "{variable}" variable found.')
@@ -140,7 +142,8 @@ def analysis(sample, type):
     ):
         shared_IDs = sample.one.values.index.intersection(sample.two.values.index)
         if sample.paired and any(
-            sample.one.values[nominal_variable].loc[shared_IDs] == sample.two.values[nominal_variable].loc[shared_IDs]
+            sample.one.values[nominal_variable].loc[shared_IDs]
+            == sample.two.values[nominal_variable].loc[shared_IDs]
         ):
             variations = [f" ({sample.one.time})", f" ({sample.two.time})"]
 
@@ -871,6 +874,3 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
-
-
-outputs("Sample.SAV")

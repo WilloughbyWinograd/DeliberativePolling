@@ -24,7 +24,7 @@ def outputs(file):
     """
     assert file.lower().endswith(
         ".sav"
-    ), "File must be a .SAV file from IBM SPSS Statistics."
+    ), 'File must be a .SAV file from IBM SPSS Statistics. See pypi.org/project/DeliberativePolling for "How To" guide for this package.'
 
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
@@ -38,7 +38,9 @@ def outputs(file):
 
     for variable in ["Time", "Group", "ID"]:
         if variable not in values:
-            raise ValueError(f'"{variable}" variable not found.')
+            raise ValueError(
+                f'"{variable}" variable not found. See pypi.org/project/DeliberativePolling for "How To" guide for this package.'
+            )
 
         if values[variable].isna().any():
             raise ValueError(f'Empty cells in "{variable}" variable found.')
@@ -140,7 +142,8 @@ def analysis(sample, type):
     ):
         shared_IDs = sample.one.values.index.intersection(sample.two.values.index)
         if sample.paired and any(
-            sample.one.values[nominal_variable].loc[shared_IDs] == sample.two.values[nominal_variable].loc[shared_IDs]
+            sample.one.values[nominal_variable].loc[shared_IDs]
+            == sample.two.values[nominal_variable].loc[shared_IDs]
         ):
             variations = [f" ({sample.one.time})", f" ({sample.two.time})"]
 
@@ -846,7 +849,7 @@ def check_labels(sample, variables):
         ]
         if len(missing_categories) > 0:
             raise ValueError(
-                f'Value labels {missing_categories} for variable "{variable}" not found.'
+                f'Value labels for {missing_categories} in variable "{variable}" not found.'
             )
 
         if type(
@@ -871,6 +874,3 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
-
-
-outputs("Sample.SAV")
