@@ -1,4 +1,5 @@
 import os
+import openpyxl
 import pandas as pd
 import numpy as np
 import warnings
@@ -17,7 +18,7 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 warnings.filterwarnings("ignore")
 
 
-def analysis(file):
+def outputs(file):
     """
     This function takes an .SAV file from IBM SPSS Statistics and creates tables and reports.
     """
@@ -92,13 +93,13 @@ def analysis(file):
         sample.one.labels.set_index(sample.one.values["ID"], inplace=True)
         sample.two.labels.set_index(sample.two.values["ID"], inplace=True)
 
-        analysis_tables(sample, "Nominal")
-        analysis_tables(sample, "Ordinal")
+        analysis(sample, "Nominal")
+        analysis(sample, "Ordinal")
 
-    print("Analysis complete.")
+    print('Analysis complete. See "Outputs" folder in directory.')
 
 
-def analysis_tables(sample, type):
+def analysis(sample, type):
     sample.crosstabs = pd.DataFrame()
     sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
 
@@ -137,8 +138,9 @@ def analysis_tables(sample, type):
         desc="Comparing Nominal Variables",
         leave=False,
     ):
+        shared_IDs = sample.one.values.index.intersection(sample.two.values.index)
         if sample.paired and any(
-            sample.one.values[nominal_variable] == sample.two.values[nominal_variable]
+            sample.one.values[nominal_variable].loc[shared_IDs] == sample.two.values[nominal_variable].loc[shared_IDs]
         ):
             variations = [f" ({sample.one.time})", f" ({sample.two.time})"]
 
@@ -157,7 +159,7 @@ def analysis_tables(sample, type):
 
             if variations.index(variation) == 1:
                 sample.one.values[nominal_variable] = sample.two.values.original_nominal
-                sample.one.labels[nominal_variable] = sample.one.labels.original_nominal
+                sample.one.labels[nominal_variable] = sample.two.labels.original_nominal
 
             for ordinal_variable in tqdm(
                 ordinal_variables,
@@ -871,4 +873,4 @@ class subsample:
         )
 
 
-analysis("Test.SAV")
+outputs("Sample.SAV")
