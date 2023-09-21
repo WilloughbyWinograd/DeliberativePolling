@@ -151,7 +151,7 @@ def analysis_tables(sample, type):
             variations = [""]
 
         for variation in variations:
-            if variations.index(variation) == 0 and variation is not "":
+            if variations.index(variation) == 0 and variation != "":
                 sample.two.values[nominal_variable] = sample.one.values.original_nominal
                 sample.two.labels[nominal_variable] = sample.one.labels.original_nominal
 
