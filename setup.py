@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
   
 setuptools.setup(
     name="DeliberativePolling",
-    version="0.0.1",
+    version="0.0.3",
     author="The Deliberative Democracy Lab at Stanford University",
     author_email="deliberation@stanford.edu",
     packages=["DeliberativePolling"],
@@ -15,5 +15,15 @@ setuptools.setup(
     url="https://github.com/WilloughbyWinograd/DeliberativePolling",
     license='MIT',
     python_requires='>=3.8',
-    install_requires=[]
+    install_requires=[
+        "os",
+        "pandas",
+        "numpy",
+        "warnings",
+        "pyreadstat",
+        "statsmodels",
+        "scipy",
+        "docx",
+        "tqdm",
+    ]
 )

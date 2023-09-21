@@ -1,0 +1,9 @@
+os
+pandas
+numpy
+warnings
+pyreadstat
+statsmodels
+scipy
+docx
+tqdm

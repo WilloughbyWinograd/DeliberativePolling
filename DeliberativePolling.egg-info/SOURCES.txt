@@ -4,4 +4,5 @@ DeliberativePolling/__init__.py
 DeliberativePolling.egg-info/PKG-INFO
 DeliberativePolling.egg-info/SOURCES.txt
 DeliberativePolling.egg-info/dependency_links.txt
+DeliberativePolling.egg-info/requires.txt
 DeliberativePolling.egg-info/top_level.txt

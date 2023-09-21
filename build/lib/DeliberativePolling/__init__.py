@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore")
 
 def analysis(file):
     """
-    Hi
+    This function takes an .SAV file from IBM SPSS Statistics and creates tables and reports.
     """
     assert file.lower().endswith(
         ".sav"
@@ -869,6 +869,3 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
-
-
-analysis("Dataset copy.sav")
