@@ -869,3 +869,6 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
+
+
+analysis("Test.SAV")
