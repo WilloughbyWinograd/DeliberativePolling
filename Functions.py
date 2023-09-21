@@ -135,7 +135,7 @@ def analysis_tables(sample, type):
         leave=False,
     ):
         if sample.paired and any(
-            sample.one.values[nominal_variable] != sample.two.values[nominal_variable]
+            sample.one.values[nominal_variable] == sample.two.values[nominal_variable]
         ):
             variations = [f" ({sample.one.time})", f" ({sample.two.time})"]
 
@@ -175,7 +175,7 @@ def analysis_tables(sample, type):
                         [sample.summary, sample.summaries], axis=0
                     )
 
-                sample.crosstabs = combine_crosstabs(sample.crosstab, sample.crosstabs)
+                sample.crosstabs = crosstab_concat(sample.crosstab, sample.crosstabs)
 
             if type == "Ordinal":
                 second_header = [""] * len(sample.crosstabs.columns)
@@ -212,7 +212,7 @@ def analysis_tables(sample, type):
 
 
 def nominal_crosstab(sample, nominal_variable):
-    sample.one.crosstab = create_crosstab(
+    sample.one.crosstab = crosstab_create(
         type="Nominal",
         data=sample.one.labels,
         index=nominal_variable,
@@ -220,7 +220,7 @@ def nominal_crosstab(sample, nominal_variable):
         weight=sample.one.weight,
     )
 
-    sample.two.crosstab = create_crosstab(
+    sample.two.crosstab = crosstab_create(
         type="Nominal",
         data=sample.two.labels,
         index=nominal_variable,
@@ -266,7 +266,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     [labels_ordered.append(value) for value in labels if value not in labels_ordered]
     labels_ordered = labels_ordered + ["DK/NA"]
 
-    sample.one.crosstab = create_crosstab(
+    sample.one.crosstab = crosstab_create(
         type="Ordinal",
         data=sample.one.labels,
         index=ordinal_variable,
@@ -275,7 +275,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
         labels=labels_ordered,
     )
 
-    sample.two.crosstab = create_crosstab(
+    sample.two.crosstab = crosstab_create(
         type="Ordinal",
         data=sample.two.labels,
         index=ordinal_variable,
@@ -300,7 +300,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
         .applymap(lambda x: f"{x}%")
     )
 
-    sample.crosstab = add_crosstab_tests(sample, nominal_variable, ordinal_variable)
+    sample.crosstab = crosstab_means(sample, nominal_variable, ordinal_variable)
 
     sample.crosstab = sample.crosstab.reset_index()
     sample.crosstab.insert(0, "Variable", np.nan)
@@ -489,7 +489,7 @@ def write_docx(sample, name, variable=None):
                 document.save(f"Outputs/{title}/Tables - {name}")
 
 
-def create_crosstab(type, data, index, columns, weight, labels=None):
+def crosstab_create(type, data, index, columns, weight, labels=None):
     if type == "Nominal":
         margins = False
         dropna = True
@@ -526,7 +526,22 @@ def create_crosstab(type, data, index, columns, weight, labels=None):
         return 100 * absolute_frequencies.iloc[:, ::-1].fillna(0).reindex(labels)
 
 
-def add_crosstab_tests(sample, nominal_variable, ordinal_variable):
+def crosstab_concat(crosstab1, crosstab2):
+    if len(crosstab1.columns) != len(crosstab2.columns):
+        crosstab2 = pd.DataFrame(columns=crosstab1.columns)
+
+    crosstab1.columns = crosstab2.columns = pd.MultiIndex.from_product(
+        [["Level1"], crosstab1.columns]
+    )
+
+    crosstabs = pd.concat([crosstab1, crosstab2])
+
+    crosstabs.columns = crosstabs.columns.get_level_values(1)
+
+    return crosstabs
+
+
+def crosstab_means(sample, nominal_variable, ordinal_variable):
     sample.means = pd.DataFrame(
         [[pd.NA] * len(sample.crosstab.columns)], columns=sample.crosstab.columns
     )
@@ -567,22 +582,7 @@ def add_crosstab_tests(sample, nominal_variable, ordinal_variable):
         )
         sample.crosstab.columns = sample.means.columns = pd.Index(crosstab_header)
 
-    return combine_crosstabs(sample.means, sample.crosstab)
-
-
-def combine_crosstabs(crosstab1, crosstab2):
-    if len(crosstab1.columns) != len(crosstab2.columns):
-        crosstab2 = pd.DataFrame(columns=crosstab1.columns)
-
-    crosstab1.columns = crosstab2.columns = pd.MultiIndex.from_product(
-        [["Level1"], crosstab1.columns]
-    )
-
-    crosstabs = pd.concat([crosstab1, crosstab2])
-
-    crosstabs.columns = crosstabs.columns.get_level_values(1)
-
-    return crosstabs
+    return crosstab_concat(sample.means, sample.crosstab)
 
 
 def x_test(variable, observed, expected):
