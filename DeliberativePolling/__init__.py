@@ -846,7 +846,7 @@ def check_labels(sample, variables):
         ]
         if len(missing_categories) > 0:
             raise ValueError(
-                f'Value labels {missing_categories} for variable "{variable}" not found.'
+                f'Value labels for {missing_categories} in variable "{variable}" not found.'
             )
 
         if type(

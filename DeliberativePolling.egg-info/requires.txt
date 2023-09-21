@@ -1,7 +1,6 @@
 pandas
 numpy
 openpyxl
-warnings
 pyreadstat
 statsmodels
 scipy
