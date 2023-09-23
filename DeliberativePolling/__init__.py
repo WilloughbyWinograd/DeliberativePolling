@@ -1,4 +1,6 @@
 import os
+import time
+import threading
 import pandas as pd
 import numpy as np
 import openpyxl
@@ -22,6 +24,13 @@ def outputs(file):
     """
     This function takes an .SAV file from IBM SPSS Statistics and creates tables and reports.
     """
+
+    animation_stop_flag = False
+    animation_thread = threading.Thread(
+        target=show_continuous_animation, args=(animation_stop_flag,)
+    )
+    animation_thread.start()
+
     assert file.lower().endswith(
         ".sav"
     ), 'File must be a .SAV file from IBM SPSS Statistics. See pypi.org/project/DeliberativePolling for "How To" guide for this package.'
@@ -99,6 +108,12 @@ def outputs(file):
         analysis(sample, "Ordinal")
 
     print('Analysis complete. See "Outputs" folder in directory.')
+
+    if "limit" in globals():
+        print(limit)
+
+    animation_stop_flag[0] = True
+    animation_thread.join()
 
 
 def analysis(sample, type):
@@ -447,7 +462,7 @@ def write_docx(sample, name, variable=None):
         table = document.add_table(rows=rows + 2, cols=cols)
         table.style = "Medium List 2"
 
-        if not len(sheet.columns) > 15:
+        if sheet.size < 50000:
             for i, column in enumerate(sheet.columns):
                 cell = table.cell(0, i)
                 for p in cell.paragraphs:
@@ -495,6 +510,9 @@ def write_docx(sample, name, variable=None):
                 document.save(f"Outputs/{title}/Report - {name}")
             else:
                 document.save(f"Outputs/{title}/Tables - {name}")
+    else:
+        global limit
+        limit = "Some XLSX tables not saved as DOCX due to extreme file size. Reduce the number of ordinal variables or nominal values to ensure all tables are saved as DOCX."
 
 
 def crosstab_create(type, data, index, columns, weight, labels=None):
@@ -874,3 +892,18 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
+
+
+def show_continuous_animation(animation_stop_flag):
+    pbar_animation = tqdm(total=1000, desc="LOADING ", position=4, bar_format="{desc}{bar}")
+    i = 0
+    while not animation_stop_flag:
+        time.sleep(.0001)
+        i = (i + 1) % 1001
+        pbar_animation.n = i
+        pbar_animation.last_print_n = i
+        pbar_animation.refresh()
+    pbar_animation.close()
+
+
+outputs("Compare.SAV")

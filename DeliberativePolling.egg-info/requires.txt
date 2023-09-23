@@ -1,4 +1,6 @@
 pandas
+time
+threading
 numpy
 openpyxl
 pyreadstat
