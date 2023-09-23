@@ -21,15 +21,16 @@ warnings.filterwarnings("ignore")
 
 
 def outputs(file):
+    outputs_thread = threading.Thread(target=get_samples, args=(file,))
+    outputs_thread.start()
+    show_continuous_animation(outputs_thread)
+    outputs_thread.join()
+
+
+def get_samples(file):
     """
     This function takes an .SAV file from IBM SPSS Statistics and creates tables and reports.
     """
-
-    animation_stop_flag = False
-    animation_thread = threading.Thread(
-        target=show_continuous_animation, args=(animation_stop_flag,)
-    )
-    animation_thread.start()
 
     assert file.lower().endswith(
         ".sav"
@@ -68,15 +69,26 @@ def outputs(file):
     ]
 
     for combination in tqdm(
-        sample_comparisons, position=0, desc="Comparing Weighted Sampling", leave=True
+        sample_comparisons,
+        position=0,
+        desc="Comparing Weighted Sampling",
+        leave=True,
     ):
 
         class sample:
             one = subsample(
-                combination[0][0], combination[0][1], combination[0][2], values, labels
+                combination[0][0],
+                combination[0][1],
+                combination[0][2],
+                values,
+                labels,
             )
             two = subsample(
-                combination[1][0], combination[1][1], combination[1][2], values, labels
+                combination[1][0],
+                combination[1][1],
+                combination[1][2],
+                values,
+                labels,
             )
             all_values = values
             all_labels = labels
@@ -104,19 +116,16 @@ def outputs(file):
         sample.one.labels.set_index(sample.one.values["ID"], inplace=True)
         sample.two.labels.set_index(sample.two.values["ID"], inplace=True)
 
-        analysis(sample, "Nominal")
-        analysis(sample, "Ordinal")
+        compare_samples(sample, "Nominal")
+        compare_samples(sample, "Ordinal")
 
     print('Analysis complete. See "Outputs" folder in directory.')
 
     if "limit" in globals():
         print(limit)
 
-    animation_stop_flag[0] = True
-    animation_thread.join()
 
-
-def analysis(sample, type):
+def compare_samples(sample, type):
     sample.crosstabs = pd.DataFrame()
     sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
 
@@ -894,12 +903,12 @@ class subsample:
         )
 
 
-def show_continuous_animation(animation_stop_flag):
+def show_continuous_animation(thread_to_check):
     pbar_animation = tqdm(
         total=1000, desc="LOADING ", position=4, bar_format="{desc}{bar}"
     )
     i = 0
-    while not animation_stop_flag:
+    while thread_to_check.is_alive():
         time.sleep(0.0001)
         i = (i + 1) % 1001
         pbar_animation.n = i
