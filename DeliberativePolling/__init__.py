@@ -895,15 +895,14 @@ class subsample:
 
 
 def show_continuous_animation(animation_stop_flag):
-    pbar_animation = tqdm(total=1000, desc="LOADING ", position=4, bar_format="{desc}{bar}")
+    pbar_animation = tqdm(
+        total=1000, desc="LOADING ", position=4, bar_format="{desc}{bar}"
+    )
     i = 0
     while not animation_stop_flag:
-        time.sleep(.0001)
+        time.sleep(0.0001)
         i = (i + 1) % 1001
         pbar_animation.n = i
         pbar_animation.last_print_n = i
         pbar_animation.refresh()
     pbar_animation.close()
-
-
-outputs("Compare.SAV")
