@@ -2,7 +2,7 @@ This package is for analyzing survey data from Deliberative Polling experiments.
 
 The package is designed with a single, specialized function called `outputs`. This function is engineered to accept input files exclusively in the IBM SPSS Statistics `.SAV` format. Upon execution, it generates output files in both `.xlsx` and `.docx` formats. These output files contain comprehensive comparisons of responses across all designated treatment groups, time intervals, and statistical weights.
 
-## Installation
+# Installation
 
 To install SPSS, go to [Software at Stanford](https://software.stanford.edu) if you are a Stanford affiliate. Othwerwise, go to [IBM SPSS Software](https://www.ibm.com/spss).
 
@@ -14,29 +14,29 @@ To install DeliberativePolling, run the following in Terminal.
 pip install DeliberativePolling
 \`\`\`
 
-## In SPSS
+# In SPSS
 
 To import data into SPSS, open SPSS and navigate to `File`, `Import Data` or simply copy and paste the data directly into the tab `Data View`.
 
 Once the data has been imported into SPSS, you need to provide metadata about the variables in the data.
 
-#### Measures
+## Measures
 
 In the "Measure" column of "Variable View", variables can be classified as "Nominal", "Ordinal", or "Scale".
 
-##### Nominal
+### Nominal
 
 These are categorical variables that do not have an intrinsic order. For example, Gender, where categories like male, female, and non-binary do not have a specific sequence. There may be some exceptions to this rule. For example, some variables like Income Level may have some order to them, so it may be tempting to classify them as Ordinal. In general, that would be a mistake.
 
-##### Ordinal
+### Ordinal
 
 These are categorical variables with a clear, definable order. For example, data derived from a Likert scale ranging from 0 to 10. The values indicate a progression from least to most favorable (or vice versa).
 
-##### Scale
+### Scale
 
 Variables not classified as either Nominal or Ordinal are listed under this category. These can be continuous or discrete variables. In order for `outputs()` to identify the different times, experiment groups, and participants in the data, it needs at least three variables classified as "Scale": "ID", "Time", and "Group".
 
-#### Weight Variables
+#### Weights
 
 [Explain]
 
@@ -46,14 +46,14 @@ Variables not classified as either Nominal or Ordinal are listed under this cate
 - **Time**: A variable indicating when the responses were given.
 - **Group**: A variable indicating what kind of experiment treatment, for example, "Treatment" or "Control".
 
-### Data Cleaning
+## Data Cleaning
 
 1. **Column Labels**: Column labels explain the meaning of variables. For example, for the Nominal variable "Education" in Sample.SAV, a good label would be something short but more descriptive like "Highest Education Level".
 2. **Value Labels**: Value labels explain the meaning of the values in the variables. For example, the Variable "Age" in Sample.SAV has the values "1", "2", "3", and "4".
 
 > **Note**: Ensure that all values have labels, otherwise the `outputs` function will return an error message explaining which values are unlabeled.
 
-## In Python
+# In Python
 
 Once the data has been cleaned and all metadata has been inputted, the `outputs` function can now be run. If there is missing metadata, then the `outputs` function will return an error and indicate what the missing data is.
 
