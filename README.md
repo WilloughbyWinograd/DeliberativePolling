@@ -25,7 +25,7 @@ Once the data has been imported into SPSS, you need to provide metadata about th
 In the "Measure" column of "Variable View", variables can be classified as "Nominal", "Ordinal", or "Scale".
 
 ### Nominal
-
+BECAUSE NOT INDENTED CAUSING HEADER SIZE PROBLEMS 
 These are categorical variables that do not have an intrinsic order. For example, Gender, where categories like male, female, and non-binary do not have a specific sequence. There may be some exceptions to this rule. For example, some variables like Income Level may have some order to them, so it may be tempting to classify them as Ordinal. In general, that would be a mistake.
 
 ### Ordinal
