@@ -1,51 +1,38 @@
-# How To
+This package is for analyzing survey data from Deliberative Polling experiments. Although designed for Deliberative Polling, this package can be used to analyze survey data from any experiment.
 
-## Purpose
+The package is designed with a single, specialized function called `outputs`. This function is engineered to accept input files exclusively in the IBM SPSS Statistics `.SAV` format. Upon execution, it generates output files in both `.xlsx` and `.docx` formats. These output files contain comprehensive comparisons of responses across all designated treatment groups, time intervals, and statistical weights.
 
-This guide is designed to assist researchers in efficiently leveraging this Python package for the analysis of survey data in Deliberative Polling experiments. Although this package was developed for the purposes of conducting Deliberative Polling, this package can be used to analyze survey data from any experiment.
+## Software Installation
 
-## Installation
+To install SPSS, go to [Software at Stanford](https://software.stanford.edu) if you are a Stanford affiliate. Othwerwise, go to [IBM SPSS Software](https://www.ibm.com/spss).
 
-This package has one function `outputs` which takes an IBM SPSS Statistics file ending in `.SAV` and outputs `.xlsx` and `.docx` documents containing comparisons of the responses of all specified treatment groups at all times, with data weighted by all statistical weights provided.
+To install Python, go to [Download Python](https://www.python.org/downloads/).
 
-> **Note**: If you are a Stanford affiliate, you can likely get SPSS for free at [software.stanford.edu](https://software.stanford.edu).
-
-To run the function, install this Python package to your device by running Python in the terminal or an IDE.
-
-The `outputs` function in this Python package
-
-> **Note**: To install Python, go to [python.org/downloads](https://www.python.org/downloads/). To activate Python in a terminal, run `Python3`.
+To install DeliberativePolling, run the following in Terminal.
 
 \`\`\`bash
 pip install DeliberativePolling
 \`\`\`
 
-Then in a directory containing the `.SAV` file, run:
+## SPSS File
 
-\`\`\`python
-from DeliberativePolling import outputs
-outputs("your_file.SAV")
-\`\`\`
+To import data into SPSS, open SPSS and navigate to `File`, `Import Data` or simply copy and paste the data directly into the tab `Data View`.
 
-For example, `outputs("Sample.SAV")`.
+Once the data has been imported into SPSS, you need to provide metadata about the variables in the data.
 
-### Data Format
+#### Measures
 
-While the survey data may be provided to you in `.csv`, `.xlsx`, or any other format, the function that outputs tables and reports requires that the data be an `.SAV` file format from IBM SPSS Statistics. It import data into SPSS, open SPSS and navigate to `File` and `Import Data` or simply copy and paste the data directly into the tab `Data View`
+In the "Measure" column of "Variable View", variables can be classified as "Nominal", "Ordinal", or "Scale".
 
-### Metadata Configuration
-
-Once the data has been imported into SPSS, you need to provide metadata about the variables in the data. In the "Measure" column of "Variable View", variables can be classified into three kinds of "Measure": "Nominal", "Ordinal", or "Scale".
-
-#### Nominal Variables
+##### Nominal
 
 These are categorical variables that do not have an intrinsic order. For example, Gender, where categories like male, female, and non-binary do not have a specific sequence. There may be some exceptions to this rule. For example, some variables like Income Level may have some order to them, so it may be tempting to classify them as Ordinal. In general, that would be a mistake.
 
-#### Ordinal Variables
+##### Ordinal
 
 These are categorical variables with a clear, definable order. For example, data derived from a Likert scale ranging from 0 to 10. The values indicate a progression from least to most favorable (or vice versa).
 
-#### Scale Variables
+##### Scale
 
 Variables not classified as either Nominal or Ordinal are listed under this category. These can be continuous or discrete variables. In order for `outputs()` to identify the different times, experiment groups, and participants in the data, it needs at least three variables classified as "Scale": "ID", "Time", and "Group".
 
@@ -69,6 +56,19 @@ Variables not classified as either Nominal or Ordinal are listed under this cate
 ### Execution
 
 Once the data has been cleaned and all metadata has been inputted, the `outputs` function can now be run. If there is missing metadata, then the `outputs` function will return an error and indicate what the missing data is.
+
+In a directory containing the `.SAV` file, run:
+
+\`\`\`bash
+Python3
+\`\`\`
+
+\`\`\`python
+from DeliberativePolling import outputs
+outputs("your_file.SAV")
+\`\`\`
+
+For example, `outputs("Sample.SAV")`.
 
 ## Output
 

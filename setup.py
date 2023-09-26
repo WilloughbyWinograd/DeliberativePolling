@@ -5,11 +5,11 @@ with open("README.md", "r") as fh:
   
 setuptools.setup(
     name="DeliberativePolling",
-    version="0.1.9",
+    version="0.2.0",
     author="The Deliberative Democracy Lab at Stanford University",
     author_email="deliberation@stanford.edu",
     packages=["DeliberativePolling"],
-    description="A package for comparing survey data between samples from Deliberative Polling experiments.",
+    description="A package for analyzing survey data from Deliberative Polling experiments.",
     long_description=description,
     long_description_content_type="text/markdown",
     url="https://github.com/WilloughbyWinograd/DeliberativePolling",
