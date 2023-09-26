@@ -14,7 +14,7 @@ To install DeliberativePolling, run the following in Terminal.
 pip install DeliberativePolling
 \`\`\`
 
-## Within SPSS
+## In SPSS
 
 To import data into SPSS, open SPSS and navigate to `File`, `Import Data` or simply copy and paste the data directly into the tab `Data View`.
 
@@ -53,7 +53,7 @@ Variables not classified as either Nominal or Ordinal are listed under this cate
 
 > **Note**: Ensure that all values have labels, otherwise the `outputs` function will return an error message explaining which values are unlabeled.
 
-## Within Python
+## In Python
 
 Once the data has been cleaned and all metadata has been inputted, the `outputs` function can now be run. If there is missing metadata, then the `outputs` function will return an error and indicate what the missing data is.
 
