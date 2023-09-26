@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
 Name: DeliberativePolling
-Version: 0.1.9
-Summary: A package for comparing survey data between samples from Deliberative Polling experiments.
+Version: 0.2.0
+Summary: A package for analyzing survey data from Deliberative Polling experiments.
 Home-page: https://github.com/WilloughbyWinograd/DeliberativePolling
 Author: The Deliberative Democracy Lab at Stanford University
 Author-email: deliberation@stanford.edu
@@ -9,158 +9,109 @@ License: MIT
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 
-# How To
+This package is for analyzing survey data from Deliberative Polling experiments. Although designed for Deliberative Polling, this package can be used to analyze survey data from any experiment.
 
-## Purpose
+The package is designed with a single, specialized function called `outputs`. This function is engineered to accept input files exclusively in the IBM SPSS Statistics `.SAV` format. Upon execution, it generates output files in both `.xlsx` and `.docx` formats. These output files contain comprehensive comparisons of responses across all designated treatment groups, time intervals, and statistical weights.
 
-This guide is designed to assist researchers in efficiently leveraging this Python package for the analysis of survey data in Deliberative Polling experiments. Although this package was developed for the purposes of conducting Deliberative Polling, this package can be used to analyze survey data from any experiment.
+# Installation
 
-## Installation
+To install SPSS, go to [Software at Stanford](https://software.stanford.edu) if you are a Stanford affiliate. Othwerwise, go to [IBM SPSS Software](https://www.ibm.com/spss).
 
-This package has one function `outputs` which takes an IBM SPSS Statistics file ending in `.SAV` and outputs `.xlsx` and `.docx` documents containing comparisons of the responses of all specified treatment groups at all times, with data weighted by all statistical weights provided.
+To install Python, go to [Download Python](https://www.python.org/downloads/).
 
-> **Note**: If you are a Stanford affiliate, you can likely get SPSS for free at [software.stanford.edu](https://software.stanford.edu).
+To install DeliberativePolling, run the following in Terminal.
 
-To run the function, install this Python package to your device by running Python in the terminal or an IDE.
-
-The `outputs` function in this Python package
-
-> **Note**: To install Python, go to [python.org/downloads](https://www.python.org/downloads/). To activate Python in a terminal, run `Python3`.
-
-\`\`\`bash
+```{bash}
 pip install DeliberativePolling
-\`\`\`
+```
 
-Then in a directory containing the `.SAV` file, run:
+# In SPSS
 
-\`\`\`python
+To import data into SPSS, open SPSS and navigate to `File`, `Import Data` or simply copy and paste the data directly into the tab `Data View`.
+
+Once the data has been imported into SPSS, you need to provide metadata about the variables in the tab `Variable View`.
+
+## Measures
+
+In the `Measure` column of `Variable View`, variables can be classified as `Nominal`, `Ordinal`, or `Scale`.
+
+### Nominal
+
+Nominal variables are categorical variables that lack a natural order. For instance, the variable `Employment` in the `Sample.SAV` file includes the categories `Employed`, `Unemployed`, `Student`, and `Other`, which don't follow a specific sequence. While there are exceptions, such as `Education Level`, which do have an order, it's generally advisable (but not mandatory) to categorize demographic data as `Nominal`.
+
+### Ordinal
+
+Ordinal variables are categorical variables that have a well-defined order. For example, the variable `Question1` in the `Sample.SAV` file. This variable uses a Likert scale that ranges from 0 to 10, representing a progression from `Poorly` to `Well` in response to the question "How well does democracy function?" Typically, it's recommended (but not obligatory) to classify variables with responses that change between time intervals as `Ordinal`.
+
+    Note: Some statisticians indicate non-response to survey questions using high numeric codes like `77`, `98`, or `99`. It's crucial to remove these high numeric codes from ordinal variables before analysis. The `outputs` function calculates the average of ordinal values, assuming a consistent scale like 0-10, 1-5, or 1-3. Including out-of-scale high values like `99` can significantly distort the calculated mean. To avoid this, replace these numeric codes with blank cells; blank cells will be counted as `DK/NA` (Don't Know/Not Applicable) and will not affect mean calculations.
+
+### Scale
+
+Any variables that don't fit into the `Nominal` or `Ordinal` categories should be classified as `Scale` variables. These can either be continuous or discrete. For example, all variables related to weight should be categorized as `Scale`.
+
+## Essential Variables
+In order for `outputs` to identify the different subjects, experimental groups, and time intervals in the data, the SPSS file must contain three variables: `ID`, `Time`, and `Group`.
+
+### ID
+The `ID` variable helps track individual participants in the study. It's like a name tag that stays the same for each person throughout the experiment. This way, you can see how a person's answers change over time. The ID can be a number, an email address, or any other unique identifier.
+
+### Group
+The `Group` variable tells you which part of the experiment a participant is in—either the `Treatment` group that receives the intervention, or the `Control` group that doesn't. This helps you compare the effects of the treatment.
+
+### Time
+The `Time` variable shows when a participant gave their answers. Labels like `Pre-Deliberation` or `T1` are usually used for answers given before the treatment, and `Post-Deliberation` or `T2` for answers given after. This helps you see how responses change over the course of the experiment.
+
+## Optional Variables
+
+### Weights
+By default, the `outputs` function generates tables that unweightedly compare survey data between all experimental groups and time intervals; however, you can introduce weighting by including columns with the word `weight` in the header, like `Weight1` in `Sample.SAV`. These weight variables must be numeric with their `Measure` set to `Scale`.
+
+### Unanalyzed
+To keep variables in the SPSS file that you don't want included in the `outputs` function's analysis but might use later, set their `Measure` to `Scale`; variables with this setting won't be part of the analysis unless they are designated as weight variables.
+
+## Labels
+
+In SPSS, labels help clarify the meaning of variables and their values.
+
+### Column Labels
+Variable names can't have spaces or punctuation. Descriptive `Column Labels` can be set in `Variable View` under the column `Label` to provide more information about the variables.
+
+**Nominal Variables**: For nominal variables use concise labels. For example, the variable `Education` in `Sample.SAV` has the column label `Education Level`. Keep these labels short because they will appear in file names like `Tables - Ordinal Variables - Treatment at T1 v. T2 (Unweighted) - Education Level`.
+
+**Ordinal Variables**: For ordinal variables you can use fuller more descriptive labels. For example, the variable `Question1` in `Sample.SAV` has the column label `How well does democracy function?`. These ordinal column labels do not appear in file names, only within cells in the outputted files so length is less of an issue.
+
+### Value Labels
+
+When working with SPSS, it's essential to set the `Type` of both `Ordinal` and `Nominal` variables to `Numeric` in the `Variable View`. Since the data will be numeric, you'll use value labels to provide meaningful context to these coded numbers.
+
+**Numeric Codes**: For ordinal variables like `Age` in `Sample.SAV`, you'll need to specify what each numeric code (`1`, `2`, `3`, and `4`) represents. Use the `Values` column in `Variable View` to associate each number with a label, such as `1` for `18-30` and `2` for `30-50`.
+
+**Shared Labels**: Some variables might have several numeric codes that mean the same thing. For instance, in the ordinal variable `Question1`, the codes `0` through `4` are all labeled as `Poorly`, while `6` through `10` are labeled as `Well`.
+
+    Note: Ensure that all values have labels, otherwise the `outputs` function will return an error message indicating which values are unlabeled.
+
+Once you've included all essential variables and assigned column and value labels to all nominal and ordinal variables, you can run the `outputs` function on the SPSS file. If any metadata is missing, the `outputs` function will return an error and specify what data is lacking.
+
+    Note: Columns like `Width`, `Decimals`, `Missing`, `Columns`, `Align`, and `Role` in `Variable View` can usually be ignored.
+
+# In Python
+
+To execute the `outputs` function, open Terminal or your preferred IDE in the directory where the `.SAV` file is located. Then, run the following commands:
+
+```{bash}
+Python3
+```
+
+```{bash}
 from DeliberativePolling import outputs
 outputs("your_file.SAV")
-\`\`\`
+```
 
-For example, `outputs("Sample.SAV")`.
+To test execution in Python, you can run the following command:
+```{bash}
+outputs("Sample.SAV")
+```
 
-### Data Format
+## Outputs
 
-While the survey data may be provided to you in `.csv`, `.xlsx`, or any other format, the function that outputs tables and reports requires that the data be an `.SAV` file format from IBM SPSS Statistics. It import data into SPSS, open SPSS and navigate to `File` and `Import Data` or simply copy and paste the data directly into the tab `Data View`
-
-### Metadata Configuration
-
-Once the data has been imported into SPSS, you need to provide metadata about the variables in the data. In the "Measure" column of "Variable View", variables can be classified into three kinds of "Measure": "Nominal", "Ordinal", or "Scale".
-
-#### Nominal Variables
-
-These are categorical variables that do not have an intrinsic order. For example, Gender, where categories like male, female, and non-binary do not have a specific sequence. There may be some exceptions to this rule. For example, some variables like Income Level may have some order to them, so it may be tempting to classify them as Ordinal. In general, that would be a mistake.
-
-#### Ordinal Variables
-
-These are categorical variables with a clear, definable order. For example, data derived from a Likert scale ranging from 0 to 10. The values indicate a progression from least to most favorable (or vice versa).
-
-#### Scale Variables
-
-Variables not classified as either Nominal or Ordinal are listed under this category. These can be continuous or discrete variables. In order for `outputs()` to identify the different times, experiment groups, and participants in the data, it needs at least three variables classified as "Scale": "ID", "Time", and "Group".
-
-#### Weight Variables
-
-[Explain]
-
-### Variable Identification
-
-- **ID**: A variable indicating individuals within the sample. IDs are necessary because the code compares the responses of individuals at multiple times.
-- **Time**: A variable indicating when the responses were given.
-- **Group**: A variable indicating what kind of experiment treatment, for example, "Treatment" or "Control".
-
-### Data Cleaning
-
-1. **Column Labels**: Column labels explain the meaning of variables. For example, for the Nominal variable "Education" in Sample.SAV, a good label would be something short but more descriptive like "Highest Education Level".
-2. **Value Labels**: Value labels explain the meaning of the values in the variables. For example, the Variable "Age" in Sample.SAV has the values "1", "2", "3", and "4".
-
-> **Note**: Ensure that all values have labels, otherwise the `outputs` function will return an error message explaining which values are unlabeled.
-
-### Execution
-
-Once the data has been cleaned and all metadata has been inputted, the `outputs` function can now be run. If there is missing metadata, then the `outputs` function will return an error and indicate what the missing data is.
-
-## Output
-
-The `outputs` function will create a folder in the directory named "Outputs", which will contain all the outputting Tables and Reports. All tables and reports will be outputted in XLSX format. If the tables and reports are reasonable sized (under 50,000 cells) then they will also be exported in a Word document format.
-
-
-
-
-
-
-
-
-
-
-
-
-
-Purpose: This guide is designed to assist professionals in efficiently leveraging a Python package tailored for the analysis of survey data in Deliberative Polling experiments.
-
-The first step in analyzing a data set of surveys of treatment and control from a Deliberative Polling experiment is to produce tables comparing the responses of these groups before deliberation and after deliberations — and, in some cases, midway through deliberation and follow ups some period of time after the deliberation has concluded.
-
-The function outputs() in this python package takes an SPSS file and outputs comparisons of the responses of all treatment groups at all times with data weighted by all statistical weights provided.
-
-Note: If you are a Stanford affiliate you can likely get SPSS for free at (link) software.stanford.edu.
-
-While the data may be provided to you as an XLSX or CSV file, the function that outputs tables and reports python package requires that the data be an SAV file from IBM SPSS Statistics. As such, you must ensure your data is in an  `.SAV` file format from IBM SPSS Statistics.
-
-Once the data has been imported into SPSS, you need to provide metadata about the variables in the data.
-
-In the "Measure" column of "Variable View", variables can be classified into three kinds of "Measure": "Nominal", "Ordinal", or "Scale".
-
-[Image of measure options]
-
-Nominal Variables: These are categorical variables that do not have an intrinsic order. For exmaple, Gender, where categories like male, female, and non-binary do not have a specific sequence. There may be some exceptions to this rule. For example, some variables like Income Level may have some order to them, so it may be tempting to classiy them as Ordinal. In general, that would be a mistake. This code compares how Ordinal variables change with respect to Nominal variables. For example, how participants in a Deliberative Polling experiment change how they rate our democracy from 0 to 10 (Ordinal) with respect to a demographic variables like income level (Nominal).
-
-Ordinal Variables: These are categorical variables with a clear, definable order. For example, data derived from a Likert scale ranging from 0 to 10. The values indicate a progression from least to most favorable (or vice versa). Again, these are the response variables we are interested in seeing how they change.
-
-Scale Variables: Variables not classified as either Nominal or Ordinal are listed under this category. These can be continuous or discrete variables. In order for outputs() to identify the different times, experiment groups, and participants in the data, it needs at least three variables classified as "Scale": "ID", "Time", and "Group".
-
-"ID" is a variable indicating individuals within the sample. IDs are necessary because the code compares the responses of individuals at multiple times. By matching IDs, it is clear how the invidiuals responses change from say, "Pre-Deliberation" to "Post-Deliberation". IDs need not be numeric. They may also be emails or any other identifying value that is consistent for the same individuals across survey responses.
-
-"Time" is a variable indicating when the responses wre given. For example, a value of "T1" in "Time" would indicate that all the responses in that row were given at T1 (which usually means before deliberation). Whereas, a value of "T2" would indicate that responses were given after T1 (which would generally mean after deliberation). While using values of "T1" or "T2" is common in experimental analysis, you can use more descriptive values like "Pre-Deliberation" and "Post-Deliberation."
-
-"Group" is variable indicating what kind of experiment treatment, for example, "Treatment" or "Control".
-
-[Image of these variables]
-
-CLEAN DATA "10-Strongly disgaree"
-
-Once your variables are properly classified by Measure, you need to label the data. There are two types of labels.
-
-Column Labels: Column labels explain the meaning of variables. Variables in SPSS cannot have spaces or punctuation in them. As such, you need to put full, descriptive labels in to explain the meaning of variables in the "Label" column in "Variable View". For example, for the Nominal variable "Education" in Sample.SAV, a good label would be something short but more descriptive like "Highest Education Level". Keep Nominal variable labels short, as they will go in the file name of ordinal tables. For Ordinal variable labels, you can put full, descriptive labels in. For example, for the Ordinal Variable "Question1" in Sample.SAV, the column label is the question itself: "How well does democracy function?". The length of column labels for ordinal variables is less important than for nominal values as these column labels do not appear in file names, merely cells within XLSX and DOCX files and so can be many characters long.
-
-Value Labels: Value labels explain the meaning of the values in the variables. For example, the Variable "Age" in Sample.SAV has the values "1", "2", "3", and "4". Without prior knowledge of how the data has been coded, these values have no meaning. In the "Values" column in "Variable View", you input value labels to give these codes meaning. In "Age" in Sample.SAV, "1" corresponds to "18-30", "2" corresponds to "30-50", etc. Note that multiple values can share the same label. For example, for Ordinal variable "Question1" values 0 through 4 are labeled as "Poorly" and values "6-10" are labeled as "Well".
-
-Note: Some survey programs label nonresponses like NA or "Don't Know" as 99 or 98. Because the average of Ordinal values are taken by outputs
-
-[Image of age value labels]
-
-Ensure that all values have labels, otherwise the outputs function will return an error message explaining which values are unlabeled.
-
-Note that columns "Width", "Decimals", "Missing", "Columns", "Align" and "Role" in "Variable View" can generally be ignored when preparing the SPSS file for use in outputs().
-
-In the "Type" column of "Variable View", Ordinal and Nominal variables must be set to "Numeric".
-
-The data must be cleaned before use. In order to make all responses in Ordinal and Nominal variables numeric, Nominal values of, for example, "Male" should be recoded into numeric versions like "1" and the appropriate value labels indicating this coding put into the "Values" column in "Variable View". For Ordinal, for example, an entry of "10-Strongly disagree" should be rewritten as "10" in numeric with a value label put in to indicate that "10" is "Strongly Disagree" (or simply "Disagree" along with "9", "8", "7", and "6").
-
-Once the data has been cleaned and all metadata has been inputted, the Outputs function can now be run. If there is missing metadata, then the Outputs function will return an error and indicate what the missing data is.
-
-To run the function, install this Python package to your device by running Python in the terminal or an IDE.
-
-Note: To install Python go to python.org/downloads. To activate Python in a terminal run "Python3".
-
-In a Python terminal, run:
-"pip install DeliberativePolling"
-
-\Then in a directory containing the .SAV file run:
-"from DeliberativePolling import outputs"
-"outputs("your_file.SAV")"
-For example, "outputs("Sample.SAV")"
-
-The Outputs function will then creatre a folder in the directory named "Outputs", which will contain all the outputting Tables and Reports.
-
-All tables and reports will be outputted in XLSX format. If the tables and reports are reasonable sized (under 50,000 cells) then they will also be exported in a Word document format.
+After running the function, a new folder named `Outputs` will be created in the directory. This folder will contain all the generated tables and reports in `.xlsx` format. If these tables and reports are reasonably sized (under 10,000 cells), they will also be exported in `.docx` format.

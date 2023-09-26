@@ -471,7 +471,7 @@ def write_docx(sample, name, variable=None):
         table = document.add_table(rows=rows + 2, cols=cols)
         table.style = "Medium List 2"
 
-        if sheet.size < 50000:
+        if sheet.size < 10000:
             for i, column in enumerate(sheet.columns):
                 cell = table.cell(0, i)
                 for p in cell.paragraphs:
@@ -521,7 +521,7 @@ def write_docx(sample, name, variable=None):
                 document.save(f"Outputs/{title}/Tables - {name}")
     else:
         global limit
-        limit = "Some XLSX tables not saved as DOCX due to extreme file size. Reduce the number of ordinal variables or nominal values to ensure all tables are saved as DOCX."
+        limit = "Some .xlsx tables not saved as .docx due to extreme file size (more than 10,000 cells). Reduce the number of ordinal variables or nominal values to ensure all tables are saved as DOCX."
 
 
 def crosstab_create(type, data, index, columns, weight, labels=None):
