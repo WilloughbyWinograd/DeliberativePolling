@@ -2,7 +2,7 @@ This package is for analyzing survey data from Deliberative Polling experiments.
 
 The package is designed with a single, specialized function called `outputs`. This function is engineered to accept input files exclusively in the IBM SPSS Statistics `.SAV` format. Upon execution, it generates output files in both `.xlsx` and `.docx` formats. These output files contain comprehensive comparisons of responses across all designated treatment groups, time intervals, and statistical weights.
 
-## Software Installation
+## Installation
 
 To install SPSS, go to [Software at Stanford](https://software.stanford.edu) if you are a Stanford affiliate. Othwerwise, go to [IBM SPSS Software](https://www.ibm.com/spss).
 
@@ -14,7 +14,7 @@ To install DeliberativePolling, run the following in Terminal.
 pip install DeliberativePolling
 \`\`\`
 
-## SPSS File
+## Within SPSS
 
 To import data into SPSS, open SPSS and navigate to `File`, `Import Data` or simply copy and paste the data directly into the tab `Data View`.
 
@@ -53,7 +53,7 @@ Variables not classified as either Nominal or Ordinal are listed under this cate
 
 > **Note**: Ensure that all values have labels, otherwise the `outputs` function will return an error message explaining which values are unlabeled.
 
-### Execution
+## Within Python
 
 Once the data has been cleaned and all metadata has been inputted, the `outputs` function can now be run. If there is missing metadata, then the `outputs` function will return an error and indicate what the missing data is.
 
