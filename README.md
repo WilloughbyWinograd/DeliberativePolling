@@ -8,7 +8,7 @@ To install SPSS, go to [Software at Stanford](https://software.stanford.edu) if 
 
 To install Python, go to [Download Python](https://www.python.org/downloads/).
 
-To install DeliberativePolling, run the following in Terminal.
+To install DeliberativePolling, run the following in Terminal:
 
 ```{bash}
 pip install DeliberativePolling
