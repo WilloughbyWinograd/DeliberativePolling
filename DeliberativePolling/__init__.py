@@ -46,6 +46,8 @@ def get_samples(file):
         var for var in scale_variables if "weight" in var.lower()
     ]
 
+    check_numeric(codebook, weights[1:])
+
     for variable in ["Time", "Group", "ID"]:
         if variable not in values:
             raise ValueError(
@@ -94,7 +96,7 @@ def get_samples(file):
             all_labels = labels
             metadata = codebook
             name = comparison_name(one, two)
-            paired = one.group + one.weight == two.group + two.weight
+            paired = str(one.group) + one.weight == str(two.group) + two.weight
 
         if sample.one.values["ID"].duplicated().any():
             raise ValueError(f'Duplicate IDs in "{sample.one.name}" found.')
@@ -195,8 +197,11 @@ def compare_samples(sample, type):
                 leave=False,
                 total=len(ordinal_variables),
             ):
-                if type == "Nominal":
+                if type == "Nominal" and variations.index(variation) == 0:
                     sample.crosstab = nominal_crosstab(sample, nominal_variable)
+                    sample.crosstabs = crosstab_concat(
+                        sample.crosstab, sample.crosstabs
+                    )
                 if type == "Ordinal":
                     sample.crosstab = ordinal_crosstab(
                         sample, nominal_variable, ordinal_variable
@@ -206,8 +211,9 @@ def compare_samples(sample, type):
                     sample.summaries = pd.concat(
                         [sample.summary, sample.summaries], axis=0
                     )
-
-                sample.crosstabs = crosstab_concat(sample.crosstab, sample.crosstabs)
+                    sample.crosstabs = crosstab_concat(
+                        sample.crosstab, sample.crosstabs
+                    )
 
             if type == "Ordinal":
                 second_header = [""] * len(sample.crosstabs.columns)
@@ -883,6 +889,38 @@ def check_labels(sample, variables):
             sample.metadata.column_labels[sample.metadata.column_names.index(variable)]
         ) is type(None):
             raise ValueError(f'Column label for variable "{variable}" not found.')
+
+
+def check_numeric(codebook, weights):
+    ordinal_variables_non_numeric = {
+        var: codebook.readstat_variable_types[var]
+        for var, measure in codebook.variable_measure.items()
+        if measure == "ordinal" and codebook.readstat_variable_types[var] != "double"
+    }
+    if len(ordinal_variables_non_numeric) > 0:
+        raise ValueError(
+            f'Ordinal variables {list(ordinal_variables_non_numeric.keys())} found with Type other than "Numeric". Ensure all ordinal variables are of Type "Numeric".'
+        )
+
+    nominal_variables_non_numeric = {
+        var: codebook.readstat_variable_types[var]
+        for var, measure in codebook.variable_measure.items()
+        if measure == "nominal" and codebook.readstat_variable_types[var] != "double"
+    }
+    if len(nominal_variables_non_numeric) > 0:
+        raise ValueError(
+            f'Nominal variables {list(nominal_variables_non_numeric.keys())} found with Type other than "Numeric". Ensure all nominal variables are of Type "Numeric".'
+        )
+
+    weight_variables_non_numeric = {
+        var: codebook.readstat_variable_types[var]
+        for var in weights
+        if codebook.readstat_variable_types[var] != "double"
+    }
+    if len(weight_variables_non_numeric) > 0:
+        raise ValueError(
+            f'Weight variables {list(weight_variables_non_numeric.keys())} found with Type other than "Numeric". Ensure all weight variables are of Type "Numeric".'
+        )
 
 
 class subsample:
