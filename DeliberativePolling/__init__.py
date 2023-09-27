@@ -46,6 +46,8 @@ def get_samples(file):
         var for var in scale_variables if "weight" in var.lower()
     ]
 
+    check_numeric(codebook, weights[1:])
+
     for variable in ["Time", "Group", "ID"]:
         if variable not in values:
             raise ValueError(
@@ -54,9 +56,7 @@ def get_samples(file):
 
         if values[variable].isna().any():
             raise ValueError(f'Empty cells in "{variable}" variable found.')
-    
-    check_numeric(codebook, weights[1:])
-    
+
     sample_comparisons = [
         comb
         for comb in list(
@@ -892,21 +892,33 @@ def check_labels(sample, variables):
 
 
 def check_numeric(codebook, weights):
-    ordinal_variables_non_numeric = {
-        var: codebook.readstat_variable_types[var]
-        for var, measure in codebook.variable_measure.items()
-        if measure == "ordinal" and codebook.readstat_variable_types[var] != "double"
-    }
+    ordinal_variables_non_numeric = list(
+        filter(
+            lambda x: x not in ["Time", "Group", "ID"],
+            {
+                var: codebook.readstat_variable_types[var]
+                for var, measure in codebook.variable_measure.items()
+                if measure == "ordinal"
+                and codebook.readstat_variable_types[var] != "double"
+            },
+        )
+    )
     if len(ordinal_variables_non_numeric) > 0:
         raise ValueError(
             f'Ordinal variables {list(ordinal_variables_non_numeric.keys())} found with Type other than "Numeric". Ensure all ordinal variables are of Type "Numeric".'
         )
 
-    nominal_variables_non_numeric = {
-        var: codebook.readstat_variable_types[var]
-        for var, measure in codebook.variable_measure.items()
-        if measure == "nominal" and codebook.readstat_variable_types[var] != "double"
-    }
+    nominal_variables_non_numeric = list(
+        filter(
+            lambda x: x not in ["Time", "Group", "ID"],
+            {
+                var: codebook.readstat_variable_types[var]
+                for var, measure in codebook.variable_measure.items()
+                if measure == "nominal"
+                and codebook.readstat_variable_types[var] != "double"
+            },
+        )
+    )
     if len(nominal_variables_non_numeric) > 0:
         raise ValueError(
             f'Nominal variables {list(nominal_variables_non_numeric.keys())} found with Type other than "Numeric". Ensure all nominal variables are of Type "Numeric".'
@@ -917,6 +929,17 @@ def check_numeric(codebook, weights):
         for var in weights
         if codebook.readstat_variable_types[var] != "double"
     }
+    list(
+        filter(
+            lambda x: x not in ["Time", "Group", "ID"],
+            {
+                var: codebook.readstat_variable_types[var]
+                for var in weights
+                if codebook.variable_measure.items()
+                if codebook.readstat_variable_types[var] != "double"
+            },
+        )
+    )
     if len(weight_variables_non_numeric) > 0:
         raise ValueError(
             f'Weight variables {list(weight_variables_non_numeric.keys())} found with Type other than "Numeric". Ensure all weight variables are of Type "Numeric".'
@@ -953,3 +976,6 @@ def show_continuous_animation(thread_to_check):
         pbar_animation.last_print_n = i
         pbar_animation.refresh()
     pbar_animation.close()
+
+
+outputs("Sample.SAV")
