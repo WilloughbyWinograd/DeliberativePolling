@@ -46,7 +46,7 @@ The `Time` variable shows when a participant gave their answers. Labels like `Pr
 
 ### Weights
 
-By default, the `outputs` function generates unweighted tables that compare survey data between all experimental groups and time intervals; however, you can introduce weighting by including columns with the word `weight` in the header, like `Weight1` in `Sample.SAV`. These weight variables must be numeric with their `Measure` set to `Scale`.
+By default, the `outputs` function generates unweighted tables that compare survey data between all experimental groups and time intervals; however, you can introduce weighting by including columns with the word `weight` in the header, like `Weight1` in [Sample.SAV](https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Sample.sav). These weight variables must be numeric with their `Measure` set to `Scale`.
 
 <div style="text-align: center;">
   <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.49.35%20PM.png?raw=true" alt="Alt text" width="400"/>
@@ -82,11 +82,11 @@ In the `Measure` column of `Variable View`, variables can be classified as `Nomi
 
 ### Nominal
 
-Nominal variables are categorical variables that lack a sequential order. For instance, the variable `Employment` in the `Sample.SAV` file includes the categories `Employed`, `Unemployed`, `Student`, and `Other`, which don't follow a specific sequence. While there are exceptions, such as `Education Level`, which do have an order, it's generally advisable (but not mandatory) to categorize variables containing demographic data as `Nominal`.
+Nominal variables are categorical variables that lack a sequential order. For instance, the variable `Employment` in the [Sample.SAV](https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Sample.sav) file includes the categories `Employed`, `Unemployed`, `Student`, and `Other`, which don't follow a specific sequence. While there are exceptions, such as `Education Level`, which do have an order, it's generally advisable (but not mandatory) to categorize variables containing demographic data as `Nominal`.
 
 ### Ordinal
 
-Ordinal variables are categorical variables that have a well-defined order. For example, the variable `Question1` in the `Sample.SAV` file. This variable uses a Likert scale that ranges from 0 to 10, representing a progression from `Poorly` to `Well` in response to the question "How well does democracy function?" Typically, it's recommended (but not obligatory) to classify variables with responses that change between time intervals as `Ordinal`.
+Ordinal variables are categorical variables that have a well-defined order. For example, the variable `Question1` in the [Sample.SAV](https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Sample.sav) file. This variable uses a Likert scale that ranges from 0 to 10, representing a progression from `Poorly` to `Well` in response to the question "How well does democracy function?" Typically, it's recommended (but not obligatory) to classify variables with responses that change between time intervals as `Ordinal`.
 
 *Some statisticians indicate non-response to survey questions using high numeric codes like `77`, `98`, or `99`. It's crucial to remove these high numeric codes from ordinal variables before analysis. The `outputs` function calculates the average of survey responses in ordinal variables, assuming a consistent scale like 0-10, 1-5, or 1-3. Including out-of-scale high values like `99` can significantly distort the calculated mean. To avoid this, replace these numeric codes with blank cells; blank cells will be counted as `DK/NA` (Don't Know/Not Applicable) and will not affect mean calculations. The exception to this rule would, of course, be if the scale naturally includes `77`, `98`, or `99`, such as 0-100.*
 
@@ -106,9 +106,9 @@ Variable names can't have spaces or punctuation. Descriptive `Column Labels` can
   <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.51.07%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
-**Nominal Variables**: For nominal variables use concise labels. For example, the variable `Education` in `Sample.SAV` has the column label `Education Level`. Keep these labels short because they will appear in file names like `Tables - Ordinal Variables - Treatment at T1 v. T2 (Unweighted) - Education Level`.
+**Nominal Variables**: For nominal variables use concise labels. For example, the variable `Education` in [Sample.SAV](https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Sample.sav) has the column label `Education Level`. Keep these labels short because they will appear in file names like `Tables - Ordinal Variables - Treatment at T1 v. T2 (Unweighted) - Education Level`.
 
-**Ordinal Variables**: For ordinal variables you can use fuller more descriptive labels. For example, the variable `Question1` in `Sample.SAV` has the column label `How well does democracy function?`. These ordinal column labels do not appear in file names, only within cells in the outputted files so length is unlikely to cause an issue.
+**Ordinal Variables**: For ordinal variables you can use fuller more descriptive labels. For example, the variable `Question1` in [Sample.SAV](https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Sample.sav) has the column label `How well does democracy function?`. These ordinal column labels do not appear in file names, only within cells in the outputted files so length is unlikely to cause an issue.
 
 ### Value Labels
 
@@ -118,7 +118,7 @@ Variable names can't have spaces or punctuation. Descriptive `Column Labels` can
 
 When working with SPSS, it's essential to set the `Type` of both `Ordinal` and `Nominal` variables to `Numeric` in the `Variable View`. Since the data will be numeric, you'll use value labels to provide meaningful context to these coded numbers.
 
-**Numeric Codes**: Value labels allow you to give meaning to numerically coded data. Use the `Values` column in `Variable View` to associate each number in ordinal or nominal variables with a label. For example, in the ordinal variable `Age` in `Sample.SAV`, the value labels indicate that a value of `1` means `18-30` and `2` means `30-50`.
+**Numeric Codes**: Value labels allow you to give meaning to numerically coded data. Use the `Values` column in `Variable View` to associate each number in ordinal or nominal variables with a label. For example, in the ordinal variable `Age` in [Sample.SAV](https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Sample.sav), the value labels indicate that a value of `1` means `18-30` and `2` means `30-50`.
 
 <div style="text-align: center;">
   <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.52.45%20PM.png?raw=true" alt="Alt text" width="400"/>
