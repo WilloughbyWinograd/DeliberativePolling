@@ -169,7 +169,7 @@ def compare_samples(sample, type):
         shared_IDs = sample.one.values.index.intersection(sample.two.values.index)
         if sample.paired and any(
             sample.one.values[nominal_variable].loc[shared_IDs]
-            == sample.two.values[nominal_variable].loc[shared_IDs]
+            != sample.two.values[nominal_variable].loc[shared_IDs]
         ):
             variations = [f" ({sample.one.time})", f" ({sample.two.time})"]
 
@@ -988,7 +988,7 @@ def show_continuous_animation(thread_to_check):
     )
     i = 0
     while thread_to_check.is_alive():
-        time.sleep(0.0001)
+        time.sleep(0.001)
         i = (i + 1) % 1001
         pbar_animation.n = i
         pbar_animation.last_print_n = i
