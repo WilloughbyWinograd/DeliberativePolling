@@ -58,7 +58,7 @@ To keep variables in the SPSS file that you don't want included in the `outputs`
 
 ## Remove Duplicate Variables
 
-When you first import your dataset into SPSS, you might notice that a single question (e.g., "How well is democracy functioning?") is represented by multiple variables corresponding to a different time point. For instance, you could have one variable named `Question1` for responses collected at the first time point (e.g., `T1`, `Pre-Deliberation`) and another variable named `T2Question1` for responses collected at the second time point (e.g., `T2`, `Post-Deliberation`). These variables need to be consolidated into a single variable.
+When you first import your dataset into SPSS, you might notice that a single question (e.g., "How well is democracy functioning?") is represented by multiple variables each corresponding to a different time point. For instance, you could have one variable named `Question1` for responses collected at the first time point (e.g., `T1`, `Pre-Deliberation`) and another variable named `T2Question1` for responses collected at the second time point (e.g., `T2`, `Post-Deliberation`). These variables need to be consolidated into a single variable.
 
 To achieve this, you'll need to create additional rows in your dataset for each participant, capturing their responses to the same question at different time intervals.
 
@@ -66,10 +66,10 @@ To achieve this, you'll need to create additional rows in your dataset for each 
 
 - **Second Row**: This row will contain the participant's response to the second time-specific variable (e.g., `T2Question1`). In the `Time` column, you should enter the label that corresponds to this time interval (e.g., `T2`, `Post-Deliberation`).
 
-By following this approach, you will stack all the responses under a single variable (e.g., `Question1`). This allows each participant's responses to be represented multiple times in the dataset, each corresponding to a different time interval. While these new rows will, of course, have different values for `Time`. The values under the variables `ID` and `Group` for these additional rows should not change.
+By following this approach, you will stack all the responses under a single variable (e.g., `Question1`). This allows each participant's responses to be represented multiple times in the dataset, each corresponding to a different time interval. While these new rows will, of course, have different values for `Time`, their values for `ID` and `Group` cannot change.
 
 <div style="text-align: center;">
-  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.41.48%20PM.png?raw=true" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-27%20at%205.15.46%20AM.png?raw=true" alt="Alt text" width="700"/>
 </div>
 
 ## Measures
