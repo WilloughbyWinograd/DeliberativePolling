@@ -976,6 +976,3 @@ def show_continuous_animation(thread_to_check):
         pbar_animation.last_print_n = i
         pbar_animation.refresh()
     pbar_animation.close()
-
-
-outputs("Sample.SAV")
