@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: DeliberativePolling
-Version: 0.2.1
+Version: 0.2.2
 Summary: A package for analyzing survey data from Deliberative Polling experiments.
 Home-page: https://github.com/WilloughbyWinograd/DeliberativePolling
 Author: The Deliberative Democracy Lab at Stanford University
@@ -30,7 +30,7 @@ pip install DeliberativePolling
 To import data into SPSS, open SPSS and navigate to `File` and `Import Data`.
 
 <div style="text-align: center;">
-  <img src="Images/Screenshot 2023-09-26 at 10.36.26 PM.png" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.36.26%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
 Once the data has been imported into SPSS, you need to provide metadata about the variables in the tab `Variable View`.
@@ -40,7 +40,7 @@ Once the data has been imported into SPSS, you need to provide metadata about th
 In the `Measure` column of `Variable View`, variables can be classified as `Nominal`, `Ordinal`, or `Scale`.
 
 <div style="text-align: center;">
-  <img src="Images/Screenshot 2023-09-26 at 10.41.48 PM.png" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.41.48%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
 ### Nominal
@@ -62,7 +62,7 @@ Any variables that don't fit into the `Nominal` or `Ordinal` categories should b
 In order for `outputs` to identify the different subjects, experimental groups, and time intervals in the data, the SPSS file must contain three variables: `ID`, `Time`, and `Group`.
 
 <div style="text-align: center;">
-  <img src="Images/Screenshot 2023-09-26 at 10.47.46 PM.png" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.47.46%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
 ### ID
@@ -84,7 +84,7 @@ The `Time` variable shows when a participant gave their answers. Labels like `Pr
 By default, the `outputs` function generates unweighted tables that compare survey data between all experimental groups and time intervals; however, you can introduce weighting by including columns with the word `weight` in the header, like `Weight1` in `Sample.SAV`. These weight variables must be numeric with their `Measure` set to `Scale`.
 
 <div style="text-align: center;">
-  <img src="Images/Screenshot 2023-09-26 at 10.49.35 PM.png" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.49.35%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
 ### Ignored
@@ -100,7 +100,7 @@ In SPSS, labels help clarify the meaning of variable names and values.
 Variable names can't have spaces or punctuation. Descriptive `Column Labels` can be set in `Variable View` under the column `Label` to provide more information about the variables.
 
 <div style="text-align: center;">
-  <img src="Images/Screenshot 2023-09-26 at 10.51.07 PM.png" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.51.07%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
 **Nominal Variables**: For nominal variables use concise labels. For example, the variable `Education` in `Sample.SAV` has the column label `Education Level`. Keep these labels short because they will appear in file names like `Tables - Ordinal Variables - Treatment at T1 v. T2 (Unweighted) - Education Level`.
@@ -110,7 +110,7 @@ Variable names can't have spaces or punctuation. Descriptive `Column Labels` can
 ### Value Labels
 
 <div style="text-align: center;">
-  <img src="Images/Screenshot 2023-09-26 at 10.51.54 PM.png" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.51.54%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
 When working with SPSS, it's essential to set the `Type` of both `Ordinal` and `Nominal` variables to `Numeric` in the `Variable View`. Since the data will be numeric, you'll use value labels to provide meaningful context to these coded numbers.
@@ -118,13 +118,13 @@ When working with SPSS, it's essential to set the `Type` of both `Ordinal` and `
 **Numeric Codes**: For ordinal variables like `Age` in `Sample.SAV`, you'll need to specify what each numeric code (`1`, `2`, `3`, and `4`) represents. Use the `Values` column in `Variable View` to associate each number with a label, such as `1` for `18-30` and `2` for `30-50`.
 
 <div style="text-align: center;">
-  <img src="Images/Screenshot 2023-09-26 at 10.52.45 PM.png" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.52.45%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
 **Shared Labels**: Some variables might have several numeric codes that mean the same thing. For instance, in the ordinal variable `Question1`, the codes `0` through `4` are all labeled as `Poorly`, while `6` through `10` are labeled as `Well`.
 
 <div style="text-align: center;">
-  <img src="Images/Screenshot 2023-09-26 at 10.53.10 PM.png" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.53.10%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
 *Ensure that all values have labels, otherwise the `outputs` function will return an error message indicating which values are unlabeled.*

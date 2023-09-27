@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
   
 setuptools.setup(
     name="DeliberativePolling",
-    version="0.2.1",
+    version="0.2.2",
     author="The Deliberative Democracy Lab at Stanford University",
     author_email="deliberation@stanford.edu",
     packages=["DeliberativePolling"],
