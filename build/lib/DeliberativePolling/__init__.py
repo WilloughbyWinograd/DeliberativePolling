@@ -46,8 +46,6 @@ def get_samples(file):
         var for var in scale_variables if "weight" in var.lower()
     ]
 
-    check_numeric(codebook, weights[1:])
-
     for variable in ["Time", "Group", "ID"]:
         if variable not in values:
             raise ValueError(
@@ -56,7 +54,9 @@ def get_samples(file):
 
         if values[variable].isna().any():
             raise ValueError(f'Empty cells in "{variable}" variable found.')
-
+    
+    check_numeric(codebook, weights[1:])
+    
     sample_comparisons = [
         comb
         for comb in list(
