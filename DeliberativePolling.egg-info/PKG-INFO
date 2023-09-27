@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: DeliberativePolling
-Version: 1.0.8
+Version: 1.0.9
 Summary: A package for analyzing survey data from Deliberative Polling experiments.
 Home-page: https://github.com/WilloughbyWinograd/DeliberativePolling
 Author: The Deliberative Democracy Lab at Stanford University
@@ -32,30 +32,6 @@ To import data into SPSS, open SPSS and navigate to `File` and `Import Data`.
 <div style="text-align: center;">
   <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.36.26%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
-
-Once the data has been imported into SPSS, you need to provide metadata about the variables in the tab `Variable View`.
-
-## Measures
-
-In the `Measure` column of `Variable View`, variables can be classified as `Nominal`, `Ordinal`, or `Scale`.
-
-<div style="text-align: center;">
-  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.41.48%20PM.png?raw=true" alt="Alt text" width="400"/>
-</div>
-
-### Nominal
-
-Nominal variables are categorical variables that lack a sequential order. For instance, the variable `Employment` in the `Sample.SAV` file includes the categories `Employed`, `Unemployed`, `Student`, and `Other`, which don't follow a specific sequence. While there are exceptions, such as `Education Level`, which do have an order, it's generally advisable (but not mandatory) to categorize variables containing demographic data as `Nominal`.
-
-### Ordinal
-
-Ordinal variables are categorical variables that have a well-defined order. For example, the variable `Question1` in the `Sample.SAV` file. This variable uses a Likert scale that ranges from 0 to 10, representing a progression from `Poorly` to `Well` in response to the question "How well does democracy function?" Typically, it's recommended (but not obligatory) to classify variables with responses that change between time intervals as `Ordinal`.
-
-*Some statisticians indicate non-response to survey questions using high numeric codes like `77`, `98`, or `99`. It's crucial to remove these high numeric codes from ordinal variables before analysis. The `outputs` function calculates the average of survey responses in ordinal variables, assuming a consistent scale like 0-10, 1-5, or 1-3. Including out-of-scale high values like `99` can significantly distort the calculated mean. To avoid this, replace these numeric codes with blank cells; blank cells will be counted as `DK/NA` (Don't Know/Not Applicable) and will not affect mean calculations. The exception to this rule would, of course, be if the scale naturally includes `77`, `98`, or `99`, such as 0-100.*
-
-### Scale
-
-Any variables that don't fit into the `Nominal` or `Ordinal` categories should be classified as `Scale` variables. These can either be continuous or discrete. All variables related to weight should be categorized as `Scale`.
 
 ## Essential Variables
 
@@ -90,6 +66,44 @@ By default, the `outputs` function generates unweighted tables that compare surv
 ### Ignored
 
 To keep variables in the SPSS file that you don't want included in the `outputs` function's analysis but might use later, set their `Measure` to `Scale`; variables with this setting won't be part of the analysis unless they are designated as weight variables.
+
+## Remove Duplicate Variables
+
+When you first import your dataset into SPSS, you might notice that a single question (e.g., "How well is democracy functioning?") is represented by multiple variables each corresponding to a different time point. For instance, you could have one variable named `Question1` for responses collected at the first time point (e.g., `T1`, `Pre-Deliberation`) and another variable named `T2Question1` for responses collected at the second time point (e.g., `T2`, `Post-Deliberation`). These variables need to be consolidated into a single variable.
+
+To achieve this, you'll need to create additional rows in your dataset for each participant, capturing their responses to the same question at different time intervals.
+
+- **First Row**: This row will contain the participant's response to the first time-specific variable (e.g., `Question1`). In the `Time` column, you should enter the label that corresponds to this time interval (e.g., `T1`, `Pre-Deliberation`).
+
+- **Second Row**: This row will contain the participant's response to the second time-specific variable (e.g., `T2Question1`). In the `Time` column, you should enter the label that corresponds to this time interval (e.g., `T2`, `Post-Deliberation`).
+
+By following this approach, you will stack all the responses under a single variable (e.g., `Question1`). This allows each participant's responses to be represented multiple times in the dataset, each corresponding to a different time interval. While these new rows will, of course, have different values for `Time`, their values for `ID` and `Group` cannot change.
+
+<div style="text-align: center;">
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-27%20at%205.15.46%20AM.png?raw=true" alt="Alt text" width="700"/>
+</div>
+
+## Measures
+
+In the `Measure` column of `Variable View`, variables can be classified as `Nominal`, `Ordinal`, or `Scale`.
+
+<div style="text-align: center;">
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.41.48%20PM.png?raw=true" alt="Alt text" width="400"/>
+</div>
+
+### Nominal
+
+Nominal variables are categorical variables that lack a sequential order. For instance, the variable `Employment` in the `Sample.SAV` file includes the categories `Employed`, `Unemployed`, `Student`, and `Other`, which don't follow a specific sequence. While there are exceptions, such as `Education Level`, which do have an order, it's generally advisable (but not mandatory) to categorize variables containing demographic data as `Nominal`.
+
+### Ordinal
+
+Ordinal variables are categorical variables that have a well-defined order. For example, the variable `Question1` in the `Sample.SAV` file. This variable uses a Likert scale that ranges from 0 to 10, representing a progression from `Poorly` to `Well` in response to the question "How well does democracy function?" Typically, it's recommended (but not obligatory) to classify variables with responses that change between time intervals as `Ordinal`.
+
+*Some statisticians indicate non-response to survey questions using high numeric codes like `77`, `98`, or `99`. It's crucial to remove these high numeric codes from ordinal variables before analysis. The `outputs` function calculates the average of survey responses in ordinal variables, assuming a consistent scale like 0-10, 1-5, or 1-3. Including out-of-scale high values like `99` can significantly distort the calculated mean. To avoid this, replace these numeric codes with blank cells; blank cells will be counted as `DK/NA` (Don't Know/Not Applicable) and will not affect mean calculations. The exception to this rule would, of course, be if the scale naturally includes `77`, `98`, or `99`, such as 0-100.*
+
+### Scale
+
+Any variables that don't fit into the `Nominal` or `Ordinal` categories should be classified as `Scale` variables. These can either be continuous or discrete. All variables related to weight should be categorized as `Scale`.
 
 ## Labels
 
