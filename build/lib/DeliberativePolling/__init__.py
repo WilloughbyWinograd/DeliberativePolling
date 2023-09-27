@@ -525,9 +525,9 @@ def write_docx(sample, name, variable=None):
                 document.save(f"Outputs/{title}/Report - {name}")
             else:
                 document.save(f"Outputs/{title}/Tables - {name}")
-    else:
-        global limit
-        limit = "Some .xlsx tables not saved as .docx due to extreme file size (more than 10,000 cells). Reduce the number of ordinal variables or nominal values to ensure all tables are saved as DOCX."
+        else:
+            global limit
+            limit = "Some .xlsx tables not saved as .docx due to extreme file size (more than 10,000 cells). Reduce the number of ordinal variables or nominal values to ensure all tables are saved as DOCX."
 
 
 def crosstab_create(type, data, index, columns, weight, labels=None):
