@@ -21,13 +21,6 @@ warnings.filterwarnings("ignore")
 
 
 def outputs(file):
-    outputs_thread = threading.Thread(target=get_samples, args=(file,))
-    outputs_thread.start()
-    show_continuous_animation(outputs_thread)
-    outputs_thread.join()
-
-
-def get_samples(file):
     """
     This function takes an .SAV file from IBM SPSS Statistics and creates tables and reports.
     """
@@ -980,17 +973,3 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
-
-
-def show_continuous_animation(thread_to_check):
-    pbar_animation = tqdm(
-        total=1000, desc="LOADING ", position=4, bar_format="{desc}{bar}"
-    )
-    i = 0
-    while thread_to_check.is_alive():
-        time.sleep(0.001)
-        i = (i + 1) % 1001
-        pbar_animation.n = i
-        pbar_animation.last_print_n = i
-        pbar_animation.refresh()
-    pbar_animation.close()
