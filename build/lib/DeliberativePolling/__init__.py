@@ -473,42 +473,63 @@ def write_docx(sample, name, variable=None):
             run.font.size = Pt(14)
             run.font.color.rgb = RGBColor(0, 0, 0)
 
-        rows, cols = sheet.shape
-        table = document.add_table(rows=rows + 2, cols=cols)
-        table.style = "Medium List 2"
+        sheets = []
+        num_columns = len(sheet.columns)
+        max_rows_per_split = 1
+        start_idx = 0
+        while start_idx < len(sheet):
+            end_idx = start_idx + max_rows_per_split
+            sheets.append(sheet.iloc[start_idx:end_idx])
+            start_idx = end_idx
 
-        if sheet.size < 10000:
-            for i, column in enumerate(sheet.columns):
-                cell = table.cell(0, i)
-                for p in cell.paragraphs:
-                    p.clear()
-                cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-                if isinstance(column, tuple):
-                    p1 = cell.add_paragraph(str(column[0]))
-                    set_font(p1)
-                    p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        iterations = -1
+        for sheet in sheets:
+            iterations += 1
 
-                    split = str(column[1]).find("(n = ")
-                    if split != -1:
-                        parts = [str(column[1])[: split - 1], str(column[1])[split:]]
-                        for part in parts:
-                            p = cell.add_paragraph(part)
-                            set_font(p)
-                            p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            if iterations == 0:
+                spacer = 2
+            else:
+                spacer = 0
+
+            rows, cols = sheet.shape
+            table = document.add_table(rows=rows + 2 * spacer, cols=cols)
+            table.style = "Medium List 2"
+
+            if iterations == 0:
+                for i, column in enumerate(sheet.columns):
+                    cell = table.cell(0, i)
+                    for p in cell.paragraphs:
+                        p.clear()
+                    cell.paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                    if isinstance(column, tuple):
+                        p1 = cell.add_paragraph(str(column[0]))
+                        set_font(p1)
+                        p1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+                        split = str(column[1]).find("(n = ")
+                        if split != -1:
+                            parts = [
+                                str(column[1])[: split - 1],
+                                str(column[1])[split:],
+                            ]
+                            for part in parts:
+                                p = cell.add_paragraph(part)
+                                set_font(p)
+                                p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                        else:
+                            p2 = cell.add_paragraph(str(column[1]))
+                            set_font(p2)
+                            p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
                     else:
-                        p2 = cell.add_paragraph(str(column[1]))
-                        set_font(p2)
-                        p2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-                else:
-                    p = cell.add_paragraph(str(column))
-                    set_font(p)
-                    p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-                vertical_alignment(cell)
+                        p = cell.add_paragraph(str(column))
+                        set_font(p)
+                        p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                    vertical_alignment(cell)
 
             for i, row in enumerate(sheet.iterrows()):
                 data = row[1]
                 for j, value in enumerate(data):
-                    cell = table.cell(i + 1, j)
+                    cell = table.cell(i + spacer, j)
                     cell.text = str(value)
                     set_font(cell)
 
@@ -521,13 +542,10 @@ def write_docx(sample, name, variable=None):
                     if not len(sheet.columns) == 2:
                         vertical_alignment(cell)
 
-            if len(sheet.columns) == 2 and "Ordinal" in name:
-                document.save(f"Outputs/{title}/Report - {name}")
-            else:
-                document.save(f"Outputs/{title}/Tables - {name}")
+        if len(sheet.columns) == 2 and "Ordinal" in name:
+            document.save(f"Outputs/{title}/Report - {name}")
         else:
-            global limit
-            limit = "Some .xlsx tables not saved as .docx due to extreme file size (more than 10,000 cells). Reduce the number of ordinal variables or nominal values to ensure all tables are saved as DOCX."
+            document.save(f"Outputs/{title}/Tables - {name}")
 
 
 def crosstab_create(type, data, index, columns, weight, labels=None):
@@ -976,3 +994,6 @@ def show_continuous_animation(thread_to_check):
         pbar_animation.last_print_n = i
         pbar_animation.refresh()
     pbar_animation.close()
+
+
+outputs("Compare.SAV")
