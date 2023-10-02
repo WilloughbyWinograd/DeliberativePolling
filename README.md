@@ -4,14 +4,14 @@ The package is designed with a single, specialized function called `outputs`. Th
 
 # Installation
 
-To install SPSS, go to [Software at Stanford](https://software.stanford.edu) if you are a Stanford affiliate. Othwerwise, go to [IBM SPSS Software](https://www.ibm.com/spss).
+To install SPSS, go to [Software at Stanford](https://stanford.onthehub.com/WebStore/ProductsByMajorVersionList.aspx?cmi_mnuMain_child=883de5b3-9f82-de11-8cd1-0030487d8897&cmi_mnuMain=0b57b739-b182-de11-8cd1-0030487d8897) if you are a Stanford affiliate. Othwerwise, go to [IBM SPSS Software](https://www.ibm.com/spss).
 
 To install Python, go to [Download Python](https://www.python.org/downloads/).
 
 To install DeliberativePolling, run the following in a terminal:
 
 ```{bash}
-pip install DeliberativePolling
+Python3 -m pip install DeliberativePolling
 ```
 
 # In SPSS
@@ -24,7 +24,7 @@ To import data into SPSS, open SPSS and navigate to `File` and `Import Data`.
 
 ## Essential Variables
 
-In order for `outputs` to identify the different subjects, experimental groups, and time intervals in the data, the SPSS file must contain three variables: `ID`, `Time`, and `Group`.
+In order for `outputs` to identify the different subjects, experimental groups, and time intervals in the data, the SPSS file must contain three variables: `ID`, `Time`, and `Group`. If not already present in the data, you will have to create these variables yourself.
 
 <div style="text-align: center;">
   <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.47.46%20PM.png?raw=true" alt="Alt text" width="400"/>
@@ -40,7 +40,7 @@ The `Group` variable tells you which part of the experiment a participant is inâ
 
 ### Time
 
-The `Time` variable shows when a participant gave their answers. Labels like `Pre-Deliberation` or `T1` are usually used for answers given before the treatment, and `Post-Deliberation` or `T2` for answers given after. This helps you see how responses change over the course of the experiment.
+The `Time` variable shows when a participant gave their answers. Labels like `Pre-Deliberation` or `T1` are usually used for answers given before the treatment, and `Post-Deliberation` or `T2` for answers given after. This helps you see how responses change over the course of the experiment. You can use any values you want to represent time intervals, "T1", "T2", "Pre-Deliberation", "Post-Deliberation", "Before", "After", etc.
 
 ## Optional Variables
 
@@ -52,9 +52,9 @@ By default, the `outputs` function generates unweighted tables that compare surv
   <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.49.35%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
-### Ignored
+### Ignored Variables
 
-To keep variables in the SPSS file that you don't want included in the `outputs` function's analysis but might use later, set their `Measure` to `Scale`; variables with this setting won't be part of the analysis unless they are designated as weight variables.
+To keep variables in the SPSS file that you don't want included in the `outputs` function's analysis but might use later, set their `Measure` to `Scale`; variables with this setting won't be part of the analysis unless they are designated as weight variables. There are often many variables in a data set that are not helpful for analyzing subject responses. For example, many data sets include the date and time the survey was started, the operating system of the user device, the IP address of the user, and other such extraneous data. In general, you should always include responses to opinion and demographic questions asked of participants.
 
 ## Remove Duplicate Variables
 
@@ -130,7 +130,7 @@ When working with SPSS, it's essential to set the `Type` of both `Ordinal` and `
   <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.53.10%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
-*Ensure that all values have labels, otherwise the `outputs` function will return an error message indicating which values are unlabeled.*
+*Ensure that all values in nominal and ordinal variables have labels, otherwise the `outputs` function will return an error message indicating which values are unlabeled. Labels for scale variables are not advised.*
 
 Once you've included all essential variables and assigned column and value labels to all nominal and ordinal variables, you can run the `outputs` function on the SPSS file. If any metadata is missing, the `outputs` function will return an error and specify what data is lacking.
 
@@ -138,7 +138,11 @@ Once you've included all essential variables and assigned column and value label
 
 # In Python
 
-To execute the `outputs` function, open a terminal with the directory containing the `.SAV` file. Then, run the following commands:
+To execute the `outputs` function, open a terminal with the directory containing the `.SAV` file.
+
+If you are not familiar with opening a terminal to a specific directory, see these [instructions](https://www.groovypost.com/howto/open-command-window-terminal-window-specific-folder-windows-mac-linux/).
+
+Run the following commands:
 
 ```{bash}
 Python3
