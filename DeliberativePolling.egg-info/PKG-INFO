@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: DeliberativePolling
-Version: 1.1.7
+Version: 1.1.8
 Summary: A package for analyzing survey data from Deliberative Polling experiments.
 Home-page: https://github.com/WilloughbyWinograd/DeliberativePolling
 Author: The Deliberative Democracy Lab at Stanford University
@@ -88,7 +88,7 @@ By following this approach, you will stack all the responses under a single vari
 In the `Measure` column of `Variable View`, variables can be classified as `Nominal`, `Ordinal`, or `Scale`.
 
 <div style="text-align: center;">
-  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.41.48%20PM.png?raw=true" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-10-04%20at%1620.41.48%20PM.png?raw=true" alt="Alt text" width="400"/>
 </div>
 
 ### Nominal
@@ -99,7 +99,11 @@ Nominal variables are categorical variables that lack a sequential order. For in
 
 Ordinal variables are categorical variables that have a well-defined order. For example, the variable `Question1` in the [Sample.SAV](https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Sample.sav) file. This variable uses a Likert scale that ranges from 0 to 10, representing a progression from `Poorly` to `Well` in response to the question "How well does democracy function?" Typically, it's recommended (but not obligatory) to classify variables with responses that change between time intervals as `Ordinal`. Examples of such responses are opinion, evaluation, values, and knowledge questions.
 
-*Some statisticians indicate non-response to survey questions using high numeric codes like `77`, `98`, or `99`. It's crucial to remove these high numeric codes from ordinal variables before analysis. The `outputs` function calculates the average of survey responses in ordinal variables, assuming a consistent scale like 0-10, 1-5, or 1-3. Including out-of-scale high values like `99` can significantly distort the calculated mean. To avoid this, replace these numeric codes with blank cells; blank cells will be counted as `DK/NA` (Don't Know/Not Applicable) and will not affect mean calculations. The exception to this rule would, of course, be if the scale naturally includes `77`, `98`, or `99`, such as 0-100.*
+**Nonresponse Indicators**: Some statisticians indicate non-response to survey questions using numeric codes like `-1`, `77`, `98`, or `99`. It's crucial to remove these nonresponse numeric codes from ordinal variables before analysis. The `outputs` function calculates the average of survey responses in ordinal variables, assuming a consistent scale like 0-10, 1-5, or 1-3. Including nonresponse values like `99` can significantly distort the calculated mean. To avoid this, replace these numeric codes with blank cells; blank cells will be counted as `DK/NA` (Don't Know/Not Applicable) and will not affect mean calculations. The exception to this rule would, of course, be if the scale naturally includes `77`, `98`, or `99`, like 0-100.*
+
+<div style="text-align: center;">
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/b901eee6898ee77195af715cace21b12a304140e/Images/3A9CE39FA4DEC4501A0B0.jpeg" alt="Alt text" width="400"/>
+</div>
 
 ### Scale
 
