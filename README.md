@@ -91,7 +91,7 @@ Ordinal variables are categorical variables that have a well-defined order. For 
 **Nonresponse Indicators**: Some statisticians indicate non-response to survey questions using numeric codes like `-1`, `77`, `98`, or `99`. It's crucial to remove these nonresponse numeric codes from ordinal variables before analysis. The `outputs` function calculates the average of survey responses in ordinal variables, assuming a consistent scale like 0-10, 1-5, or 1-3. Including nonresponse values like `99` can significantly distort the calculated mean. To avoid this, replace these numeric codes with blank cells; blank cells will be counted as `DK/NA` (Don't Know/Not Applicable) and will not affect mean calculations. The exception to this rule would, of course, be if the scale naturally includes `77`, `98`, or `99`, like 0-100.*
 
 <div style="text-align: center;">
-  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/main/Images/Screenshot%202023-09-26%20at%2010.41.48%20PM.png?raw=true" alt="Alt text" width="400"/>
+  <img src="https://github.com/WilloughbyWinograd/DeliberativePolling/blob/b901eee6898ee77195af715cace21b12a304140e/Images/3A9CE39FA4DEC4501A0B0.jpeg" alt="Alt text" width="400"/>
 </div>
 
 ### Scale
