@@ -919,7 +919,7 @@ def check_numeric(codebook, weights):
     )
     if len(ordinal_variables_non_numeric) > 0:
         raise ValueError(
-            f'Ordinal variables {list(ordinal_variables_non_numeric.keys())} found with Type other than "Numeric". Ensure all ordinal variables are of Type "Numeric".'
+            f'Ordinal variables {list(ordinal_variables_non_numeric)} found with Type other than "Numeric". Ensure all ordinal variables are of Type "Numeric".'
         )
 
     nominal_variables_non_numeric = list(
@@ -935,7 +935,7 @@ def check_numeric(codebook, weights):
     )
     if len(nominal_variables_non_numeric) > 0:
         raise ValueError(
-            f'Nominal variables {list(nominal_variables_non_numeric.keys())} found with Type other than "Numeric". Ensure all nominal variables are of Type "Numeric".'
+            f'Nominal variables {list(nominal_variables_non_numeric)} found with Type other than "Numeric". Ensure all nominal variables are of Type "Numeric".'
         )
 
     weight_variables_non_numeric = {
