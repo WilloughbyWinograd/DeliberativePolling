@@ -6,3 +6,4 @@ statsmodels
 scipy
 docx
 tqdm
+python-docx

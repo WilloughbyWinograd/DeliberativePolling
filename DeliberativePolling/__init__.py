@@ -50,6 +50,9 @@ def outputs(file):
         if values[variable].isna().any():
             raise ValueError(f'Empty cells in "{variable}" variable found.')
 
+    values["Time"] = labels["Time"]
+    values["Group"] = labels["Group"]
+
     sample_comparisons = [
         comb
         for comb in list(

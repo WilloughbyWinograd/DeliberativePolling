@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="DeliberativePolling",
-    version="1.1.5",
+    version="1.1.8",
     author="The Deliberative Democracy Lab at Stanford University",
     author_email="deliberation@stanford.edu",
     packages=["DeliberativePolling"],
@@ -24,5 +24,6 @@ setuptools.setup(
         "scipy",
         "docx",
         "tqdm",
+        "python-docx",
     ],
 )
