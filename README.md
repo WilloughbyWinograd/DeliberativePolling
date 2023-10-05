@@ -2,6 +2,8 @@ This package is for analyzing survey data from Deliberative Polling experiments.
 
 The package is designed with a single, specialized function called `outputs`. This function accepts as input files exclusively in the IBM SPSS Statistics `.SAV` format. Upon execution, it generates output files in both `.xlsx` and `.docx` formats. These output files contain statistical comparisons of all ordinal and nominal variables across all designated treatment groups, time intervals, and statistical weights.
 
+While it is technically possible to run this package on Windows, it is **strongly advised** to use MacOS instead. Windows may require additional compatibility steps due to the Python package dependency pyreadstat. For more details, please refer to the pyreadstat [Windows Compilation Guide](https://github.com/Roche/pyreadstat/blob/master/windows_compilation.md).
+
 # Installation
 
 To install SPSS, go to [Software at Stanford](https://stanford.onthehub.com/WebStore/ProductsByMajorVersionList.aspx?cmi_mnuMain_child=883de5b3-9f82-de11-8cd1-0030487d8897&cmi_mnuMain=0b57b739-b182-de11-8cd1-0030487d8897) if you are a Stanford affiliate. Othwerwise, go to [IBM SPSS Software](https://www.ibm.com/spss).

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: DeliberativePolling
-Version: 1.2.3
+Version: 1.2.4
 Summary: A package for analyzing survey data from Deliberative Polling experiments.
 Home-page: https://github.com/WilloughbyWinograd/DeliberativePolling
 Author: The Deliberative Democracy Lab at Stanford University
@@ -12,6 +12,8 @@ Description-Content-Type: text/markdown
 This package is for analyzing survey data from Deliberative Polling experiments. Although designed for Deliberative Polling, this package can be used to analyze any experimental survey data.
 
 The package is designed with a single, specialized function called `outputs`. This function accepts as input files exclusively in the IBM SPSS Statistics `.SAV` format. Upon execution, it generates output files in both `.xlsx` and `.docx` formats. These output files contain statistical comparisons of all ordinal and nominal variables across all designated treatment groups, time intervals, and statistical weights.
+
+While it is technically possible to run this package on Windows, it is **strongly advised** to use MacOS instead. Windows may require additional compatibility steps due to the Python package dependency pyreadstat. For more details, please refer to the pyreadstat [Windows Compilation Guide](https://github.com/Roche/pyreadstat/blob/master/windows_compilation.md).
 
 # Installation
 
