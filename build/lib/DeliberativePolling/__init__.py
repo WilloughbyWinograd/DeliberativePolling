@@ -984,5 +984,3 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
-
-outputs("America_in_One_Room_Democratic_Reform.sav")
