@@ -44,6 +44,8 @@ The `Group` variable tells you which part of the experiment a participant is inâ
 
 The `Time` variable shows when a participant gave their answers. Labels like `Pre-Deliberation` or `T1` are usually used for answers given before the treatment, and `Post-Deliberation` or `T2` for answers given after. This helps you see how responses change over the course of the experiment. You can use any values you want to represent time intervals, "T1", "T2", "Pre-Deliberation", "Post-Deliberation", "Before", "After", etc.
 
+*Note that `outputs` will run a comparison of every `Group` at every `Time` at every weight. It is advisable to keep the number of groups, times, and weights low to ensure a reasonable runtime.*
+
 ## Optional Variables
 
 ### Weights
