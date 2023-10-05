@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import threading
 import pandas as pd
@@ -49,7 +50,7 @@ def outputs(file):
 
         if values[variable].isna().any():
             raise ValueError(f'Empty cells in "{variable}" variable found.')
-
+    
     values["Time"] = labels["Time"]
     values["Group"] = labels["Group"]
 
@@ -401,8 +402,6 @@ def write_xlsx(sample, name):
     name += ".xlsx"
     title = sample.name
 
-    os.makedirs(f"Outputs/{title}", exist_ok=True)
-
     sheet_name = title
     if len(sheet_name) > 31:
         sheet_name = sheet_name[:28] + "..."
@@ -413,6 +412,12 @@ def write_xlsx(sample, name):
         index = True
     else:
         index = False
+
+    title = re.sub(r'[<>:"/\\|?*:]', "", title)
+    name = re.sub(r'[<>:"/\\|?*:]', "", name)
+    sheet_name = re.sub(r'[<>:"/\\|?*:]', "", sheet_name)
+
+    os.makedirs(f"Outputs/{title}", exist_ok=True)
 
     sample.crosstabs.to_excel(
         f"Outputs/{title}/Tables - {name}",
@@ -443,8 +448,6 @@ def write_docx(sample, name, variable=None):
         header_text = title
     else:
         header_text = f"{title} by {variable}"
-
-    os.makedirs(f"Outputs/{title}", exist_ok=True)
 
     for sheet in [sample.summaries, sample.crosstabs]:
         document = Document()
@@ -537,6 +540,11 @@ def write_docx(sample, name, variable=None):
 
                     if not len(sheet.columns) == 2:
                         vertical_alignment(cell)
+
+        title = re.sub(r'[<>:"/\\|?*:]', "", title)
+        name = re.sub(r'[<>:"/\\|?*:]', "", name)
+
+        os.makedirs(f"Outputs/{title}", exist_ok=True)
 
         if len(sheet.columns) == 2 and "Ordinal" in name:
             document.save(f"Outputs/{title}/Report - {name}")
@@ -976,3 +984,5 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
+
+outputs("America_in_One_Room_Democratic_Reform.sav")

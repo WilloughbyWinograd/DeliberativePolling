@@ -7,3 +7,4 @@ scipy
 docx
 tqdm
 python-docx
+re
