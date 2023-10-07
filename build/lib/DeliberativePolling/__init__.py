@@ -66,7 +66,6 @@ def outputs(file, fast=False):
         )
         if not (comb[0][0] == comb[1][0] and comb[0][2] != comb[1][2])
     ]
-    sample_comparisons[0] = sample_comparisons[90]
 
     for combination in tqdm(
         sample_comparisons,
