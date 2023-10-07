@@ -266,7 +266,7 @@ def compare_samples(sample, type, fast):
                 ]
                 name = document_title(sample, type, variable) + variation
 
-                write_xlsx(sample, name)
+                write_xlsx(sample, name, variable)
                 if not fast:
                     write_docx(sample, name, variable)
                 sample.crosstabs = pd.DataFrame()
@@ -432,7 +432,7 @@ def ordinal_summary(sample, ordinal_variable):
     return pd.DataFrame([ordinal_variable, statement]).T
 
 
-def write_xlsx(sample, name):
+def write_xlsx(sample, name, variable=""):
     name += ".xlsx"
     title = sample.name
 
@@ -454,6 +454,7 @@ def write_xlsx(sample, name):
     directory = f"Outputs/{sample.one.time} v. {sample.two.time}/{title}"
     if os.path.exists(f"Outputs/{sample.two.time} v. {sample.one.time}"):
         directory = f"Outputs/{sample.two.time} v. {sample.one.time}/{title}"
+    directory = f"{directory}/{variable}"
     os.makedirs(directory, exist_ok=True)
 
     sample.crosstabs.to_excel(
@@ -472,7 +473,7 @@ def write_xlsx(sample, name):
         )
 
 
-def write_docx(sample, name, variable=None):
+def write_docx(sample, name, variable=""):
     try:
         sample.crosstabs.fillna("", inplace=True)
     except TypeError:
@@ -481,7 +482,7 @@ def write_docx(sample, name, variable=None):
     name += ".docx"
     title = sample.name
 
-    if variable == None:
+    if variable == "":
         header_text = title
     else:
         header_text = f"{title} by {variable}"
@@ -584,6 +585,7 @@ def write_docx(sample, name, variable=None):
         directory = f"Outputs/{sample.one.time} v. {sample.two.time}/{title}"
         if os.path.exists(f"Outputs/{sample.two.time} v. {sample.one.time}"):
             directory = f"Outputs/{sample.two.time} v. {sample.one.time}/{title}"
+        directory = f"{directory}/{variable}"
         os.makedirs(directory, exist_ok=True)
 
         if len(sheet.columns) == 2 and "Ordinal" in name:
@@ -1024,3 +1026,5 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
+
+outputs("Sample.SAV")
