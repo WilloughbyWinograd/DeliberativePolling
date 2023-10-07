@@ -21,14 +21,14 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 warnings.filterwarnings("ignore")
 
 
-def outputs(file):
+def outputs(file, fast=False):
     """
-    This function takes an .SAV file from IBM SPSS Statistics and creates tables and reports.
+    This function takes an .sav file from IBM SPSS Statistics and creates tables and reports.
     """
 
     assert file.lower().endswith(
         ".sav"
-    ), 'File must be a .SAV file from IBM SPSS Statistics. See pypi.org/project/DeliberativePolling for "How To" guide for this package.'
+    ), 'File must be a .sav file from IBM SPSS Statistics. See pypi.org/project/DeliberativePolling for "How To" guide for this package.'
 
     values, codebook = pyreadstat.read_sav(file, apply_value_formats=False)
     labels = pyreadstat.read_sav(file, apply_value_formats=True)[0]
@@ -50,7 +50,7 @@ def outputs(file):
 
         if values[variable].isna().any():
             raise ValueError(f'Empty cells in "{variable}" variable found.')
-    
+
     values["Time"] = labels["Time"]
     values["Group"] = labels["Group"]
 
@@ -66,6 +66,7 @@ def outputs(file):
         )
         if not (comb[0][0] == comb[1][0] and comb[0][2] != comb[1][2])
     ]
+    sample_comparisons[0] = sample_comparisons[90]
 
     for combination in tqdm(
         sample_comparisons,
@@ -115,8 +116,8 @@ def outputs(file):
         sample.one.labels.set_index(sample.one.values["ID"], inplace=True)
         sample.two.labels.set_index(sample.two.values["ID"], inplace=True)
 
-        compare_samples(sample, "Nominal")
-        compare_samples(sample, "Ordinal")
+        compare_samples(sample, "Nominal", fast)
+        compare_samples(sample, "Ordinal", fast)
 
     print('Analysis complete. See "Outputs" folder in directory.')
 
@@ -124,7 +125,7 @@ def outputs(file):
         print(limit)
 
 
-def compare_samples(sample, type):
+def compare_samples(sample, type, fast):
     sample.crosstabs = pd.DataFrame()
     sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
 
@@ -164,28 +165,60 @@ def compare_samples(sample, type):
         leave=False,
     ):
         shared_IDs = sample.one.values.index.intersection(sample.two.values.index)
-        if sample.paired and any(
-            sample.one.values[nominal_variable].loc[shared_IDs]
-            != sample.two.values[nominal_variable].loc[shared_IDs]
+        if (
+            sample.paired
+            and any(
+                sample.one.values[nominal_variable].loc[shared_IDs]
+                != sample.two.values[nominal_variable].loc[shared_IDs]
+            )
+            and type == "Ordinal"
         ):
             variations = [f" ({sample.one.time})", f" ({sample.two.time})"]
 
-            sample.one.values.original_nominal = sample.one.values[nominal_variable]
-            sample.two.values.original_nominal = sample.two.values[nominal_variable]
-            sample.one.labels.original_nominal = sample.one.labels[nominal_variable]
-            sample.two.labels.original_nominal = sample.two.labels[nominal_variable]
+            sample.one.values.original_nominal = sample.one.values[
+                nominal_variable
+            ].loc[shared_IDs]
+            sample.two.values.original_nominal = sample.two.values[
+                nominal_variable
+            ].loc[shared_IDs]
+            sample.one.labels.original_nominal = sample.one.labels[
+                nominal_variable
+            ].loc[shared_IDs]
+            sample.two.labels.original_nominal = sample.two.labels[
+                nominal_variable
+            ].loc[shared_IDs]
 
         else:
             variations = [""]
 
         for variation in variations:
             if variations.index(variation) == 0 and variation != "":
-                sample.two.values[nominal_variable] = sample.one.values.original_nominal
-                sample.two.labels[nominal_variable] = sample.one.labels.original_nominal
+                sample.one.values[nominal_variable].loc[
+                    shared_IDs
+                ] = sample.one.values.original_nominal
+                sample.two.values[nominal_variable].loc[
+                    shared_IDs
+                ] = sample.one.values.original_nominal
+                sample.one.labels[nominal_variable].loc[
+                    shared_IDs
+                ] = sample.one.labels.original_nominal
+                sample.two.labels[nominal_variable].loc[
+                    shared_IDs
+                ] = sample.one.labels.original_nominal
 
             if variations.index(variation) == 1:
-                sample.one.values[nominal_variable] = sample.two.values.original_nominal
-                sample.one.labels[nominal_variable] = sample.two.labels.original_nominal
+                sample.one.values[nominal_variable].loc[
+                    shared_IDs
+                ] = sample.two.values.original_nominal
+                sample.two.values[nominal_variable].loc[
+                    shared_IDs
+                ] = sample.two.values.original_nominal
+                sample.one.labels[nominal_variable].loc[
+                    shared_IDs
+                ] = sample.two.labels.original_nominal
+                sample.two.labels[nominal_variable].loc[
+                    shared_IDs
+                ] = sample.two.labels.original_nominal
 
             for ordinal_variable in tqdm(
                 ordinal_variables,
@@ -194,7 +227,7 @@ def compare_samples(sample, type):
                 leave=False,
                 total=len(ordinal_variables),
             ):
-                if type == "Nominal" and variations.index(variation) == 0:
+                if type == "Nominal":
                     sample.crosstab = nominal_crosstab(sample, nominal_variable)
                     sample.crosstabs = crosstab_concat(
                         sample.crosstab, sample.crosstabs
@@ -235,7 +268,8 @@ def compare_samples(sample, type):
                 name = document_title(sample, type, variable) + variation
 
                 write_xlsx(sample, name)
-                write_docx(sample, name, variable)
+                if not fast:
+                    write_docx(sample, name, variable)
                 sample.crosstabs = pd.DataFrame()
                 sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
 
@@ -243,7 +277,8 @@ def compare_samples(sample, type):
         name = document_title(sample, type, nominal_variable)
 
         write_xlsx(sample, name)
-        write_docx(sample, name)
+        if not fast:
+            write_docx(sample, name)
 
 
 def nominal_crosstab(sample, nominal_variable):
@@ -341,7 +376,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     sample.crosstab.insert(0, "Variable", np.nan)
     crosstab_header = sample.crosstab.columns.tolist()
     crosstab_header[0] = "Variable"
-    crosstab_header[1] = "Label, Values"
+    crosstab_header[1] = "Labels"
     sample.crosstab.columns = crosstab_header
     sample.crosstab.iloc[0, 0] = ordinal_variable
     sample.crosstab.iloc[0, 1] = sample.metadata.column_labels[
@@ -354,7 +389,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
 def ordinal_summary(sample, ordinal_variable):
     statement = ""
     crosstab = sample.crosstab.copy()
-    crosstab.set_index("Label, Values", inplace=True)
+    crosstab.set_index("Labels", inplace=True)
 
     label = sample.metadata.column_labels[
         sample.metadata.column_names.index(ordinal_variable)
