@@ -375,7 +375,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     sample.crosstab.insert(0, "Variable", np.nan)
     crosstab_header = sample.crosstab.columns.tolist()
     crosstab_header[0] = "Variable"
-    crosstab_header[1] = "Labels"
+    crosstab_header[1] = "Label"
     sample.crosstab.columns = crosstab_header
     sample.crosstab.iloc[0, 0] = ordinal_variable
     sample.crosstab.iloc[0, 1] = sample.metadata.column_labels[
@@ -388,7 +388,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
 def ordinal_summary(sample, ordinal_variable):
     statement = ""
     crosstab = sample.crosstab.copy()
-    crosstab.set_index("Labels", inplace=True)
+    crosstab.set_index("Label", inplace=True)
 
     label = sample.metadata.column_labels[
         sample.metadata.column_names.index(ordinal_variable)
