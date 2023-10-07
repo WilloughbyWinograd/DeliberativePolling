@@ -451,10 +451,13 @@ def write_xlsx(sample, name):
     name = re.sub(r'[<>:"/\\|?*:]', "", name)
     sheet_name = re.sub(r'[<>:"/\\|?*:]', "", sheet_name)
 
-    os.makedirs(f"Outputs/{title}", exist_ok=True)
+    directory = f"Outputs/{sample.one.time} v. {sample.two.time}/{title}"
+    if os.path.exists(f"Outputs/{sample.two.time} v. {sample.one.time}"):
+        directory = f"Outputs/{sample.two.time} v. {sample.one.time}/{title}"
+    os.makedirs(directory, exist_ok=True)
 
     sample.crosstabs.to_excel(
-        f"Outputs/{title}/Tables - {name}",
+        f"{directory}/Tables - {name}",
         sheet_name=sheet_name,
         index=index,
         header=True,
@@ -462,7 +465,7 @@ def write_xlsx(sample, name):
 
     if "Ordinal" in name:
         sample.summaries.to_excel(
-            f"Outputs/{title}/Report - {name}",
+            f"{directory}/Report - {name}",
             sheet_name=sheet_name,
             index=False,
             header=True,
@@ -578,12 +581,15 @@ def write_docx(sample, name, variable=None):
         title = re.sub(r'[<>:"/\\|?*:]', "", title)
         name = re.sub(r'[<>:"/\\|?*:]', "", name)
 
-        os.makedirs(f"Outputs/{title}", exist_ok=True)
+        directory = f"Outputs/{sample.one.time} v. {sample.two.time}/{title}"
+        if os.path.exists(f"Outputs/{sample.two.time} v. {sample.one.time}"):
+            directory = f"Outputs/{sample.two.time} v. {sample.one.time}/{title}"
+        os.makedirs(directory, exist_ok=True)
 
         if len(sheet.columns) == 2 and "Ordinal" in name:
-            document.save(f"Outputs/{title}/Report - {name}")
+            document.save(f"{directory}/Report - {name}")
         else:
-            document.save(f"Outputs/{title}/Tables - {name}")
+            document.save(f"{directory}/Tables - {name}")
 
 
 def crosstab_create(type, data, index, columns, weight, labels=None):
