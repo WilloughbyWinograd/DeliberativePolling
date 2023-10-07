@@ -1026,5 +1026,3 @@ class subsample:
             .assign(Total="Total")
             .assign(Unweighted=1)
         )
-
-outputs("Sample.SAV")
