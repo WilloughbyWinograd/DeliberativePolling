@@ -551,7 +551,7 @@ def write_docx(sample, name, variable=""):
                 spacer = 0
 
             rows, cols = sheet.shape
-            table = document.add_table(rows=rows + 2 * spacer, cols=cols)
+            table = document.add_table(rows=rows + spacer, cols=cols)
             table.style = "Medium List 2"
 
             if iterations == 0:
