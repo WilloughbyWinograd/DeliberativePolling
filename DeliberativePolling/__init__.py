@@ -545,22 +545,13 @@ def write_docx(sample, name, variable=""):
         for sheet in sheets:
             iterations += 1
 
-            if iterations == 0 and "Ordinal" in name:
-                spacer = 2
-                multiplier = 2
-            else:
-                spacer = 0
-                multiplier = 2
-
-            if iterations == 0 and "Nominal" in name:
+            if iterations == 0:
                 spacer = 1
-                multiplier = 1
             else:
                 spacer = 0
-                multiplier = 2
 
             rows, cols = sheet.shape
-            table = document.add_table(rows=rows + multiplier * spacer, cols=cols)
+            table = document.add_table(rows=rows + 2 * spacer, cols=cols)
             table.style = "Medium List 2"
 
             if iterations == 0:
