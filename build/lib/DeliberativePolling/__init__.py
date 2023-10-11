@@ -228,21 +228,17 @@ def compare_samples(sample, type, fast):
             ):
                 if type == "Nominal":
                     sample.crosstab = nominal_crosstab(sample, nominal_variable)
-                    sample.crosstabs = crosstab_concat(
-                        sample.crosstab, sample.crosstabs
-                    )
+                    sample.summary = nominal_summary(sample, nominal_variable)
+
                 if type == "Ordinal":
                     sample.crosstab = ordinal_crosstab(
                         sample, nominal_variable, ordinal_variable
                     )
                     sample.summary = ordinal_summary(sample, ordinal_variable)
-                    sample.summary.columns = sample.summaries.columns
-                    sample.summaries = pd.concat(
-                        [sample.summary, sample.summaries], axis=0
-                    )
-                    sample.crosstabs = crosstab_concat(
-                        sample.crosstab, sample.crosstabs
-                    )
+
+                sample.summary.columns = sample.summaries.columns
+                sample.summaries = pd.concat([sample.summary, sample.summaries], axis=0)
+                sample.crosstabs = crosstab_concat(sample.crosstab, sample.crosstabs)
 
             if type == "Ordinal":
                 second_header = [""] * len(sample.crosstabs.columns)
@@ -303,7 +299,7 @@ def nominal_crosstab(sample, nominal_variable):
     sample.crosstab.insert(0, "Variable", np.nan)
     sample.crosstab.columns = [
         "Variable",
-        "Values",
+        "Label",
         add_sample_size(sample.one.name, sample.one.values[nominal_variable]),
         add_sample_size(sample.two.name, sample.two.values[nominal_variable]),
     ]
@@ -385,6 +381,33 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     return sample.crosstab
 
 
+def nominal_summary(sample, nominal_variable):
+    statement = ""
+    crosstab = sample.crosstab.copy()
+    crosstab.set_index("Label", inplace=True)
+
+    label = sample.metadata.column_labels[
+        sample.metadata.column_names.index(nominal_variable)
+    ]
+
+    if "P = " in crosstab.iloc[0, 0]:
+        difference = dist_comparison(crosstab.iloc[0, 0].split("P = ")[1].split(")")[0])
+
+        likeness, plurality1, plurality2 = plurality_comparison(
+            crosstab.iloc[:, 1],
+            crosstab.iloc[:, 2],
+        )
+
+        statement = f'The distribution of "{label}" {difference} between {crosstab.columns[1]} and {crosstab.columns[2]}. In {sample.two.name}, there was {plurality2} among this group, {likeness} in {sample.one.name} {plurality1}.'
+
+        if "Warning:" in crosstab.iloc[0, 0]:
+            statement += " Note that the significance test may be incorrect because at least one expected value is less than 5."
+
+    if len(statement) == 0:
+        statement = "Insufficient data to generate prose summary."
+    return pd.DataFrame([label, statement]).T
+
+
 def ordinal_summary(sample, ordinal_variable):
     statement = ""
     crosstab = sample.crosstab.copy()
@@ -464,13 +487,12 @@ def write_xlsx(sample, name, variable=""):
         header=True,
     )
 
-    if "Ordinal" in name:
-        sample.summaries.to_excel(
-            f"{directory}/Report - {name}",
-            sheet_name=sheet_name,
-            index=False,
-            header=True,
-        )
+    sample.summaries.to_excel(
+        f"{directory}/Report - {name}",
+        sheet_name=sheet_name,
+        index=False,
+        header=True,
+    )
 
 
 def write_docx(sample, name, variable=""):
@@ -523,13 +545,22 @@ def write_docx(sample, name, variable=""):
         for sheet in sheets:
             iterations += 1
 
-            if iterations == 0:
+            if iterations == 0 and "Ordinal" in name:
                 spacer = 2
+                multiplier = 2
             else:
                 spacer = 0
+                multiplier = 2
+
+            if iterations == 0 and "Nominal" in name:
+                spacer = 1
+                multiplier = 1
+            else:
+                spacer = 0
+                multiplier = 2
 
             rows, cols = sheet.shape
-            table = document.add_table(rows=rows + 2 * spacer, cols=cols)
+            table = document.add_table(rows=rows + multiplier * spacer, cols=cols)
             table.style = "Medium List 2"
 
             if iterations == 0:
@@ -588,7 +619,7 @@ def write_docx(sample, name, variable=""):
         directory = f"{directory}/{variable}"
         os.makedirs(directory, exist_ok=True)
 
-        if len(sheet.columns) == 2 and "Ordinal" in name:
+        if len(sheet.columns) == 2:
             document.save(f"{directory}/Report - {name}")
         else:
             document.save(f"{directory}/Tables - {name}")
@@ -621,14 +652,17 @@ def crosstab_create(type, data, index, columns, weight, labels=None):
             (absolute_frequencies / absolute_frequencies.sum().sum() * 100)
             .round(1)
             .astype(str)
+            .replace("nan", "0.0")
             .applymap(lambda x: f"({x}%)")
             + " "
             + absolute_frequencies.round().astype(int).astype(str)
         )
 
-        return combined_frequencies.iloc[:, ::-1].replace("nan", "0")
+        return combined_frequencies.iloc[:, ::-1].replace("nan", "0.0")
     else:
-        return 100 * absolute_frequencies.iloc[:, ::-1].fillna(0).reindex(labels)
+        return 100 * absolute_frequencies.iloc[:, ::-1].fillna(0).reindex(
+            labels
+        ).replace("nan", "0")
 
 
 def crosstab_concat(crosstab1, crosstab2):
@@ -904,7 +938,17 @@ def mean_comparison(sample, difference):
             return f"was not a significant (P = {P}) difference"
 
 
+def dist_comparison(P):
+    if float(P) < 0.05:
+        return f"was significantly (P = {P}) different"
+    else:
+        return f"was not significantly (P = {P}) different"
+
+
 def plurality(percentages):
+    if percentages.apply(lambda x: "%)" in x).any():
+        percentages = percentages.apply(lambda x: x.split("%")[0][1:] + "%")
+
     value = percentages.str.rstrip("%").astype(float).idxmax()
     numeric = float(percentages[value].rstrip("%"))
 
