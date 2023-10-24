@@ -269,8 +269,8 @@ def compare_samples(sample, type, fast):
                 ]
                 name = document_title(sample, type, variable) + variation
 
-                export = sum(sample.one.values[nominal_variable]) != 0 and sum(sample.two.values[nominal_variable]) != 0
-
+                export = len(sample.one.values[nominal_variable].dropna()) != 0 and len(sample.two.values[nominal_variable].dropna()) != 0
+                
                 if export: write_xlsx(sample, name, variable)
                 if not fast:
                     if export: write_docx(sample, name, variable)
