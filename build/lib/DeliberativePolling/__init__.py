@@ -164,6 +164,13 @@ def compare_samples(sample, type, fast):
         leave=False,
     ):
         shared_IDs = sample.one.values.index.intersection(sample.two.values.index)
+
+        if sample.paired:
+            if sum(sample.one.values[sample.one.weight]) == 0:
+                sample.one.values[sample.one.weight].loc[shared_IDs] = sample.two.values[sample.two.weight].loc[shared_IDs]
+            if sum(sample.two.values[sample.two.weight]) == 0:
+                sample.two.values[sample.two.weight].loc[shared_IDs] = sample.one.values[sample.one.weight].loc[shared_IDs]
+
         if (
             sample.paired
             and any(
@@ -262,9 +269,11 @@ def compare_samples(sample, type, fast):
                 ]
                 name = document_title(sample, type, variable) + variation
 
-                write_xlsx(sample, name, variable)
+                export = sum(sample.one.values[nominal_variable]) != 0 and sum(sample.two.values[nominal_variable]) != 0
+
+                if export: write_xlsx(sample, name, variable)
                 if not fast:
-                    write_docx(sample, name, variable)
+                    if export: write_docx(sample, name, variable)
                 sample.crosstabs = pd.DataFrame()
                 sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
 
