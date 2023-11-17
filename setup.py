@@ -14,7 +14,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/WilloughbyWinograd/DeliberativePolling",
     license="MIT",
-    python_requires=">=3.8",
+    python_requires=">=3.11",
     install_requires=[
         "pandas",
         "numpy",
