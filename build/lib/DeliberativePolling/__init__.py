@@ -269,7 +269,7 @@ def compare_samples(sample, type, fast):
                 ]
                 name = document_title(sample, type, variable) + variation
 
-                export = len(sample.one.values[nominal_variable].dropna()) != 0 and len(sample.two.values[nominal_variable].dropna()) != 0
+                export = len(sample.one.values[nominal_variable].dropna()) != 0 and len(sample.two.values[nominal_variable].dropna()) != 0 and len(sample.one.values[sample.one.weight].dropna()) != 0 and len(sample.two.values[sample.two.weight].dropna()) != 0
                 
                 if export: write_xlsx(sample, name, variable)
                 if not fast:
@@ -286,12 +286,18 @@ def compare_samples(sample, type, fast):
 
 
 def nominal_crosstab(sample, nominal_variable):
+
+    labels = sample.metadata.variable_value_labels[nominal_variable].values()
+    labels_ordered = []
+    [labels_ordered.append(value) for value in labels if value not in labels_ordered]
+
     sample.one.crosstab = crosstab_create(
         type="Nominal",
         data=sample.one.labels,
         index=nominal_variable,
         columns="Total",
         weight=sample.one.weight,
+        labels=labels_ordered
     )
 
     sample.two.crosstab = crosstab_create(
@@ -300,6 +306,7 @@ def nominal_crosstab(sample, nominal_variable):
         index=nominal_variable,
         columns="Total",
         weight=sample.two.weight,
+        labels=labels_ordered
     )
 
     sample.crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab], axis=1)
@@ -648,6 +655,18 @@ def crosstab_create(type, data, index, columns, weight, labels=None):
     )
 
     if type == "Nominal":
+
+        if len(absolute_frequencies) == 0:
+            absolute_frequencies = pd.crosstab(
+                index="",
+                columns=data[columns],
+                values=data[weight],
+                aggfunc="sum",
+                margins=margins,
+                dropna=dropna,
+                normalize=normalize,
+            ).reindex(labels).fillna(0)
+
         combined_frequencies = (
             (absolute_frequencies / absolute_frequencies.sum().sum() * 100)
             .round(1)
@@ -657,8 +676,10 @@ def crosstab_create(type, data, index, columns, weight, labels=None):
             + " "
             + absolute_frequencies.round().astype(int).astype(str)
         )
-
-        return combined_frequencies.iloc[:, ::-1].replace("nan", "0.0")
+        
+        return combined_frequencies.iloc[:, ::-1].fillna(0).reindex(
+            labels
+        ).replace(pd.NA, "(0.0%) 0")
     else:
         return 100 * absolute_frequencies.iloc[:, ::-1].fillna(0).reindex(
             labels
@@ -731,22 +752,24 @@ def x_test(variable, observed, expected):
 
     observed_expected = np.column_stack((observed, expected))
 
-    observed_expected = observed_expected[
-        ~np.apply_along_axis(lambda y: np.all(y == 0), 1, observed_expected)
-    ]
+    if len(observed_expected) != 0:
 
-    if not type(sum(observed_expected)) == int and not np.any(
-        np.all(observed_expected == 0, axis=0)
-    ):
-        _, P, _, _ = chi2_contingency(observed_expected)
-    else:
-        P = np.nan
+        observed_expected = observed_expected[
+            ~np.apply_along_axis(lambda y: np.all(y == 0), 1, observed_expected)
+        ]
 
-    if not np.isnan(P):
-        if np.any(expected < 5):
-            return f"{variable} (P = {P:.3f}) Warning: P-value may be incorrect because at least one expected value is less than 5."
+        if not type(sum(observed_expected)) == int and not np.any(
+            np.all(observed_expected == 0, axis=0)
+        ):
+            _, P, _, _ = chi2_contingency(observed_expected)
         else:
-            return f"{variable} (P = {P:.3f})"
+            P = np.nan
+
+        if not np.isnan(P):
+            if np.any(expected < 5):
+                return f"{variable} (P = {P:.3f}) Warning: P-value may be incorrect because at least one expected value is less than 5."
+            else:
+                return f"{variable} (P = {P:.3f})"
 
     return variable
 
