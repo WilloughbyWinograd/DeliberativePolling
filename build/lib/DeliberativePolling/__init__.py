@@ -355,7 +355,7 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
     labels = sample.metadata.variable_value_labels[nominal_variable].values()
     labels_nominal = []
     [labels_nominal.append(value) for value in labels if value not in labels_nominal]
-    labels_nominal = labels_nominal + ["DK/NA"]
+    labels_nominal = labels_nominal
 
     labels = sample.metadata.variable_value_labels[ordinal_variable].values()
     labels_ordinal = []
@@ -664,9 +664,10 @@ def crosstab_create(
         normalize = "columns"
         index_data = data[index].cat.add_categories(["DK/NA"]).fillna("DK/NA")
         columns_data = data[columns]
-        if columns_data.isna().all():
+        if data[columns].isna().all():
             columns_data = data[columns].cat.set_categories(labels_nominal)
-
+        
+    
     absolute_frequencies = pd.crosstab(
         index=index_data,
         columns=columns_data,
@@ -710,23 +711,8 @@ def crosstab_create(
             .replace(pd.NA, "(0.0%) 0")
         )
     else:
-        if len(absolute_frequencies) == 0:
-            absolute_frequencies = (
-                pd.crosstab(
-                    index="",
-                    columns=data[columns],
-                    values=data[weight],
-                    aggfunc="sum",
-                    margins=False,
-                    dropna=dropna,
-                    normalize=normalize,
-                )
-                .reindex(labels_nominal)
-                .fillna(0)
-            )
-
         return 100 * absolute_frequencies.iloc[:, ::-1].fillna(0).reindex(
-            labels_nominal
+            labels_ordinal
         ).replace("nan", "0")
 
 
