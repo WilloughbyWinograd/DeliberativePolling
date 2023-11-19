@@ -167,9 +167,13 @@ def compare_samples(sample, type, fast):
 
         if sample.paired:
             if sum(sample.one.values[sample.one.weight]) == 0:
-                sample.one.values[sample.one.weight].loc[shared_IDs] = sample.two.values[sample.two.weight].loc[shared_IDs]
+                sample.one.values[sample.one.weight].loc[
+                    shared_IDs
+                ] = sample.two.values[sample.two.weight].loc[shared_IDs]
             if sum(sample.two.values[sample.two.weight]) == 0:
-                sample.two.values[sample.two.weight].loc[shared_IDs] = sample.one.values[sample.one.weight].loc[shared_IDs]
+                sample.two.values[sample.two.weight].loc[
+                    shared_IDs
+                ] = sample.one.values[sample.one.weight].loc[shared_IDs]
 
         if (
             sample.paired
@@ -269,11 +273,18 @@ def compare_samples(sample, type, fast):
                 ]
                 name = document_title(sample, type, variable) + variation
 
-                export = len(sample.one.values[nominal_variable].dropna()) != 0 and len(sample.two.values[nominal_variable].dropna()) != 0 and len(sample.one.values[sample.one.weight].dropna()) != 0 and len(sample.two.values[sample.two.weight].dropna()) != 0
-                
-                if export: write_xlsx(sample, name, variable)
+                export = (
+                    len(sample.one.values[nominal_variable].dropna()) != 0
+                    or len(sample.two.values[nominal_variable].dropna()) != 0
+                    and len(sample.one.values[sample.one.weight].dropna()) != 0
+                    and len(sample.two.values[sample.two.weight].dropna()) != 0
+                )
+
+                if export:
+                    write_xlsx(sample, name, variable)
                 if not fast:
-                    if export: write_docx(sample, name, variable)
+                    if export:
+                        write_docx(sample, name, variable)
                 sample.crosstabs = pd.DataFrame()
                 sample.summaries = pd.DataFrame(columns=["Variable", "Summary"])
 
@@ -286,7 +297,6 @@ def compare_samples(sample, type, fast):
 
 
 def nominal_crosstab(sample, nominal_variable):
-
     labels = sample.metadata.variable_value_labels[nominal_variable].values()
     labels_ordered = []
     [labels_ordered.append(value) for value in labels if value not in labels_ordered]
@@ -297,7 +307,7 @@ def nominal_crosstab(sample, nominal_variable):
         index=nominal_variable,
         columns="Total",
         weight=sample.one.weight,
-        labels=labels_ordered
+        labels_nominal=labels_ordered,
     )
 
     sample.two.crosstab = crosstab_create(
@@ -306,7 +316,7 @@ def nominal_crosstab(sample, nominal_variable):
         index=nominal_variable,
         columns="Total",
         weight=sample.two.weight,
-        labels=labels_ordered
+        labels_nominal=labels_ordered,
     )
 
     sample.crosstab = pd.concat([sample.one.crosstab, sample.two.crosstab], axis=1)
@@ -342,10 +352,15 @@ def nominal_crosstab(sample, nominal_variable):
 
 
 def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
+    labels = sample.metadata.variable_value_labels[nominal_variable].values()
+    labels_nominal = []
+    [labels_nominal.append(value) for value in labels if value not in labels_nominal]
+    labels_nominal = labels_nominal + ["DK/NA"]
+
     labels = sample.metadata.variable_value_labels[ordinal_variable].values()
-    labels_ordered = []
-    [labels_ordered.append(value) for value in labels if value not in labels_ordered]
-    labels_ordered = labels_ordered + ["DK/NA"]
+    labels_ordinal = []
+    [labels_ordinal.append(value) for value in labels if value not in labels_ordinal]
+    labels_ordinal = labels_ordinal + ["DK/NA"]
 
     sample.one.crosstab = crosstab_create(
         type="Ordinal",
@@ -353,7 +368,8 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
         index=ordinal_variable,
         columns=nominal_variable,
         weight=sample.one.weight,
-        labels=labels_ordered,
+        labels_nominal=labels_nominal,
+        labels_ordinal=labels_ordinal,
     )
 
     sample.two.crosstab = crosstab_create(
@@ -362,7 +378,8 @@ def ordinal_crosstab(sample, nominal_variable, ordinal_variable):
         index=ordinal_variable,
         columns=nominal_variable,
         weight=sample.two.weight,
-        labels=labels_ordered,
+        labels_nominal=labels_nominal,
+        labels_ordinal=labels_ordinal,
     )
 
     sample.crosstab = pd.concat(
@@ -632,21 +649,27 @@ def write_docx(sample, name, variable=""):
             document.save(f"{directory}/Tables - {name}")
 
 
-def crosstab_create(type, data, index, columns, weight, labels=None):
+def crosstab_create(
+    type, data, index, columns, weight, labels_nominal, labels_ordinal=None
+):
     if type == "Nominal":
         margins = False
         dropna = True
         normalize = False
         index_data = data[index]
+        columns_data = data[columns]
     else:
         margins = True
         dropna = False
         normalize = "columns"
         index_data = data[index].cat.add_categories(["DK/NA"]).fillna("DK/NA")
+        columns_data = data[columns]
+        if columns_data.isna().all():
+            columns_data = data[columns].cat.set_categories(labels_nominal)
 
     absolute_frequencies = pd.crosstab(
         index=index_data,
-        columns=data[columns],
+        columns=columns_data,
         values=data[weight],
         aggfunc="sum",
         margins=margins,
@@ -655,17 +678,20 @@ def crosstab_create(type, data, index, columns, weight, labels=None):
     )
 
     if type == "Nominal":
-
         if len(absolute_frequencies) == 0:
-            absolute_frequencies = pd.crosstab(
-                index="",
-                columns=data[columns],
-                values=data[weight],
-                aggfunc="sum",
-                margins=margins,
-                dropna=dropna,
-                normalize=normalize,
-            ).reindex(labels).fillna(0)
+            absolute_frequencies = (
+                pd.crosstab(
+                    index="",
+                    columns=columns_data,
+                    values=data[weight],
+                    aggfunc="sum",
+                    margins=margins,
+                    dropna=dropna,
+                    normalize=normalize,
+                )
+                .reindex(labels_nominal)
+                .fillna(0)
+            )
 
         combined_frequencies = (
             (absolute_frequencies / absolute_frequencies.sum().sum() * 100)
@@ -676,13 +702,31 @@ def crosstab_create(type, data, index, columns, weight, labels=None):
             + " "
             + absolute_frequencies.round().astype(int).astype(str)
         )
-        
-        return combined_frequencies.iloc[:, ::-1].fillna(0).reindex(
-            labels
-        ).replace(pd.NA, "(0.0%) 0")
+
+        return (
+            combined_frequencies.iloc[:, ::-1]
+            .fillna(0)
+            .reindex(labels_nominal)
+            .replace(pd.NA, "(0.0%) 0")
+        )
     else:
+        if len(absolute_frequencies) == 0:
+            absolute_frequencies = (
+                pd.crosstab(
+                    index="",
+                    columns=data[columns],
+                    values=data[weight],
+                    aggfunc="sum",
+                    margins=False,
+                    dropna=dropna,
+                    normalize=normalize,
+                )
+                .reindex(labels_nominal)
+                .fillna(0)
+            )
+
         return 100 * absolute_frequencies.iloc[:, ::-1].fillna(0).reindex(
-            labels
+            labels_nominal
         ).replace("nan", "0")
 
 
@@ -753,7 +797,6 @@ def x_test(variable, observed, expected):
     observed_expected = np.column_stack((observed, expected))
 
     if len(observed_expected) != 0:
-
         observed_expected = observed_expected[
             ~np.apply_along_axis(lambda y: np.all(y == 0), 1, observed_expected)
         ]
