@@ -1,4 +1,4 @@
-README-DeliberativePolling.md
+README.md
 setup.py
 DeliberativePolling/__init__.py
 DeliberativePolling.egg-info/PKG-INFO
